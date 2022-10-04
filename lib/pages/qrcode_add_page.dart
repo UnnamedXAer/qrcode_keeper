@@ -96,7 +96,8 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                   },
                 ),
               ),
-              Expanded(
+              Container(
+                  height: 300,
                   child: ListView(children: codes.map((e) => Text(e)).toList()))
             ],
           ),
