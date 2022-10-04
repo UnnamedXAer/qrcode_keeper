@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qrcode_keeper/helpers/snackabar.dart';
+import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/add_codes/scanned_codes_bottom_sheet_content.dart';
 
 class QRCodeAddPage extends StatefulWidget {
@@ -13,6 +15,9 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
   List<String> codes = [];
   Map<String, bool> usedCodes = {};
   bool _openCamera = false;
+
+// TODO: add expiration date.
+
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +140,24 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
         }).then((_) => setState(() {}));
   }
 
-  Future<void> _saveCodes() {
-    return Future.delayed(const Duration(milliseconds: 300));
+  Future<void> _saveCodes() async {
+    final db = DBService();
+    try {
+      await db.saveQrCodes(codes, usedCodes);
+      // ignore: use_build_context_synchronously
+      SnackbarCustom.show(
+        context,
+        message: 'saved codes successfully',
+        mounted: mounted,
+        level: MessageLevel.success,
+      );
+    } catch (err) {
+      SnackbarCustom.show(
+        context,
+        message: 'save qrcodes: $err',
+        mounted: mounted,
+        level: MessageLevel.error,
+      );
+    }
   }
 }

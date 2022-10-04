@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:qrcode_keeper/pages/home_page.dart';
 import 'package:qrcode_keeper/pages/qrcode_add_page.dart';
 import 'package:qrcode_keeper/pages/qrcode_display_page.dart';
+import 'package:qrcode_keeper/services/database.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DBService.initialize();
+
   runApp(const MyApp());
 }
 
