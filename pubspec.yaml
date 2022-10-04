@@ -36,6 +36,14 @@ dependencies:
   cupertino_icons: ^1.0.2
   qr_flutter: ^4.0.0
   mobile_scanner: ^2.0.0
+  sqflite: ^2.1.0
+  intl: ^0.17.0
+  # month_year_picker: ^0.2.0+2
+  month_year_picker:
+    git:
+      url: https://github.com/LamsaLL/month-year-picker.git
+      ref: fix-months-overflow
+  persistent_bottom_nav_bar: ^5.0.2
 
 dev_dependencies:
   flutter_test:
