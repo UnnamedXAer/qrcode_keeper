@@ -56,7 +56,11 @@ class _QRCodeListState extends State<QRCodeList> {
     final db = DBService();
     loading = true;
     db
-        .getCodesForMonth(_expirationDate)
+        .getCodesForMonth(
+          _expirationDate,
+          includeExpired: true,
+          includeUsed: true,
+        )
         .then(
           (value) => setState(() {
             codes = value;
@@ -97,9 +101,10 @@ class _QRCodeListState extends State<QRCodeList> {
             itemBuilder: (context, i) {
               return ListTile(
                 title: Text(codes[i].value),
-                subtitle: codes[i].expiresAt != null
-                    ? Text(codes[i].expiresAt.toString())
-                    : null,
+                subtitle: Text(
+                    '${codes[i].expiresAt?.format()}${codes[i].usedAt != null ? ' / ${codes[i].usedAt!.format()}' : ''}'),
+                trailing:
+                    codes[i].usedAt != null ? const Icon(Icons.done) : null,
                 onTap: () {
                   widget.onItemPressed(codes[i]);
                 },

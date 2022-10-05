@@ -17,11 +17,11 @@ class QRCode {
     this.validForMonth = false,
   });
 
+  /// works only for setting new values, does not work for setting `null`'s
   QRCode copyWith({
     final int? id,
     final String? value,
     final DateTime? createdAt,
-    final bool? used,
     final DateTime? usedAt,
     final DateTime? expiresAt,
     final bool? validForMonth,

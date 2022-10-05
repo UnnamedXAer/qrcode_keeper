@@ -87,9 +87,10 @@ class DBService {
   }
 
   Future<List<QRCode>> getCodesForMonth(
-    DateTime expirationMonth, [
-    bool showExpired = false,
-  ]) async {
+    DateTime expirationMonth, {
+    bool includeExpired = false,
+    bool includeUsed = false,
+  }) async {
     final dateStart = DateTime(expirationMonth.year, expirationMonth.month);
     final dateEnd = DateTime(
       dateStart.year,
@@ -98,17 +99,22 @@ class DBService {
       const Duration(milliseconds: 1),
     );
 
-    debugPrint('getCodesForMonth: $dateStart / $dateEnd, $showExpired');
+    debugPrint('getCodesForMonth: $dateStart / $dateEnd, $includeExpired');
 
     String where =
-        '(${QRCodeNS.cExpiresAt} >= ? and ${QRCodeNS.cExpiresAt} <= ?)';
+        '((${QRCodeNS.cExpiresAt} >= ? and ${QRCodeNS.cExpiresAt} <= ?)';
+    if (includeExpired) {
+      where += ' or ${QRCodeNS.cExpiresAt} is null ';
+    }
+    where += ')';
+
     List<Object?> whereArgs = [
       dateStart.millisecondsSinceEpoch,
       dateEnd.millisecondsSinceEpoch,
     ];
 
-    if (!showExpired) {
-      where += ' or ${QRCodeNS.cExpiresAt} is null';
+    if (!includeUsed) {
+      where += ' and ${QRCodeNS.cUsedAt} is null ';
     }
 
     final data = await _db.query(

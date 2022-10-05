@@ -5,7 +5,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/helpers/snackabar.dart';
-import 'package:qrcode_keeper/pages/qrcode_display_page.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/add_codes/scanned_codes_bottom_sheet_content.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
@@ -203,16 +202,6 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                     ),
                   ],
                 ),
-                // CheckboxListTile(
-                //   enabled: false && !_neverExpire,
-                //   title: const Text('Valid to the end of month'),
-                //   value: _validForMonth && !_neverExpire,
-                //   onChanged: (v) {
-                //     setState(() {
-                //       _validForMonth = v ?? false;
-                //     });
-                //   },
-                // ),
                 if (_codes.isNotEmpty)
                   Text(
                     'You have ${_codes.length} codes to save.\n'

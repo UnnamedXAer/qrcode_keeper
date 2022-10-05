@@ -80,7 +80,7 @@ class _BottomTabsLayoutState extends State<BottomTabsLayout> {
         ),
       ),
       PersistentBottomNavBarItem(
-        icon: const Icon(Icons.message),
+        icon: const Icon(Icons.qr_code_2_outlined),
         title: "Display",
         activeColorPrimary: Colors.deepOrange,
         inactiveColorPrimary: Colors.grey,
