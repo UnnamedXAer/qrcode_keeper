@@ -91,7 +91,12 @@ class DBService {
     bool showExpired = false,
   ]) async {
     final dateStart = DateTime(expirationMonth.year, expirationMonth.month);
-    final dateEnd = DateTime(dateStart.year, dateStart.month + 1, 1);
+    final dateEnd = DateTime(
+      dateStart.year,
+      dateStart.month + 1,
+    ).subtract(
+      const Duration(milliseconds: 1),
+    );
 
     debugPrint('getCodesForMonth: $dateStart / $dateEnd, $showExpired');
 
@@ -99,7 +104,7 @@ class DBService {
         '(${QRCodeNS.cExpiresAt} >= ? and ${QRCodeNS.cExpiresAt} <= ?)';
     List<Object?> whereArgs = [
       dateStart.millisecondsSinceEpoch,
-      dateEnd.microsecondsSinceEpoch
+      dateEnd.millisecondsSinceEpoch,
     ];
 
     if (!showExpired) {

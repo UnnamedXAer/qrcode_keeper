@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:month_year_picker/month_year_picker.dart';
 import 'package:qrcode_keeper/helpers/snackabar.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/add_codes/scanned_codes_bottom_sheet_content.dart';
@@ -196,16 +196,16 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                     ),
                   ],
                 ),
-                CheckboxListTile(
-                  enabled: false && !_neverExpire,
-                  title: const Text('Valid to the end of month'),
-                  value: _validForMonth && !_neverExpire,
-                  onChanged: (v) {
-                    setState(() {
-                      _validForMonth = v ?? false;
-                    });
-                  },
-                ),
+                // CheckboxListTile(
+                //   enabled: false && !_neverExpire,
+                //   title: const Text('Valid to the end of month'),
+                //   value: _validForMonth && !_neverExpire,
+                //   onChanged: (v) {
+                //     setState(() {
+                //       _validForMonth = v ?? false;
+                //     });
+                //   },
+                // ),
                 if (_codes.isNotEmpty)
                   Text(
                     'You have ${_codes.length} codes to save.\n'
@@ -326,7 +326,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    DateTime? picked = await showDatePicker(
+    DateTime? picked = await showMonthYearPicker(
       context: context,
       initialDate: _expirationDate,
       firstDate: DateTime(2012, 1, 1),

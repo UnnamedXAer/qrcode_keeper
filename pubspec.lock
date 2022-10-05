@@ -62,6 +62,11 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
+  flutter_localizations:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -121,6 +126,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.0"
+  month_year_picker:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: fix-months-overflow
+      resolved-ref: "4c70b0a36ee1b40639b953cd59d0ddb24513dc82"
+      url: "https://github.com/LamsaLL/month-year-picker.git"
+    source: git
+    version: "0.1.0+3"
   path:
     dependency: transitive
     description:

@@ -38,6 +38,11 @@ dependencies:
   mobile_scanner: ^2.0.0
   sqflite: ^2.1.0
   intl: ^0.17.0
+  # month_year_picker: ^0.2.0+2
+  month_year_picker:
+    git:
+      url: https://github.com/LamsaLL/month-year-picker.git
+      ref: fix-months-overflow
 
 dev_dependencies:
   flutter_test:

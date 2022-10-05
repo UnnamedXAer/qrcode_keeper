@@ -19,7 +19,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
   @override
   void initState() {
     super.initState();
-    expirationDate = DateTime.now().add(Duration(days: 1));
+    expirationDate = DateTime.now().add(const Duration(days: 1));
     isOutdated =
         expirationDate != null && expirationDate!.isBefore(DateTime.now());
   }
