@@ -20,7 +20,7 @@ class QRLookupPage extends StatelessWidget {
       body: QRCodeList(
         expirationDate: DateTime.now(),
         onItemPressed: (QRCode code) {
-          Navigator.of(context).pushNamed('/qr-display', arguments: code);
+          // Navigator.of(context).pushNamed('/qr-display', arguments: code);
         },
       ),
     );

@@ -140,11 +140,11 @@ class DBService {
     return qrCodes;
   }
 
-  Future<void> deleteQRCodes(List<num> ids) async {
+  Future<void> deleteQRCodes(num id) async {
     final result = await _db.rawDelete(
-        'DELETE FROM ${QRCodeNS.table} WHERE ${QRCodeNS.cId} IN (?)', [ids]);
+        'DELETE FROM ${QRCodeNS.table} WHERE ${QRCodeNS.cId} = (?)', [id]);
 
-    debugPrint('deleting codes with ids: $ids, result: $result');
+    debugPrint('deleting codes with ids: $id, result: $result');
   }
 
   Future<void> toggleCodeUsed(int id, DateTime? date) async {

@@ -34,7 +34,7 @@ class QRCodeList extends StatefulWidget {
 }
 
 class _QRCodeListState extends State<QRCodeList> {
-  List<QRCode> codes = [];
+  List<QRCode> _codes = [];
   String? error;
   bool loading = false;
   late DateTime _expirationDate;
@@ -63,7 +63,7 @@ class _QRCodeListState extends State<QRCodeList> {
         )
         .then(
           (value) => setState(() {
-            codes = value;
+            _codes = value;
             error = null;
             loading = false;
           }),
@@ -90,23 +90,37 @@ class _QRCodeListState extends State<QRCodeList> {
       content = ErrorText(error!);
     } else if (loading) {
       content = const Center(child: CircularProgressIndicator.adaptive());
-    } else if (codes.isEmpty) {
+    } else if (_codes.isEmpty) {
       content =
           Text('No Codes found for month: ${_expirationDate.monthDesc()}');
     } else {
       content = Expanded(
         child: ListView.separated(
             shrinkWrap: true, // TODO remove shrinkWrap & expanded
-            itemCount: codes.length,
+            itemCount: _codes.length,
             itemBuilder: (context, i) {
               return ListTile(
-                title: Text(codes[i].value),
+                title: Text(_codes[i].value),
                 subtitle: Text(
-                    '${codes[i].expiresAt?.format()}${codes[i].usedAt != null ? ' / ${codes[i].usedAt!.format()}' : ''}'),
-                trailing:
-                    codes[i].usedAt != null ? const Icon(Icons.done) : null,
+                    '${_codes[i].expiresAt?.format()}${_codes[i].usedAt != null ? ' / ${_codes[i].usedAt!.format()}' : ''}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_codes[i].usedAt != null)
+                      IconButton(
+                        onPressed: () => _showDialogUnmarkUsed(_codes[i].id),
+                        icon: const Icon(Icons.done),
+                      ),
+                    IconButton(
+                      onPressed: _codes[i].usedAt != null
+                          ? null
+                          : () => _showDialogDelete(_codes[i].id),
+                      icon: const Icon(Icons.delete_outlined),
+                    ),
+                  ],
+                ),
                 onTap: () {
-                  widget.onItemPressed(codes[i]);
+                  widget.onItemPressed(_codes[i]);
                 },
               );
             },
@@ -116,15 +130,6 @@ class _QRCodeListState extends State<QRCodeList> {
       );
     }
 
-    // final items = months
-    //     .map<DropdownMenuItem<String>>(
-    //       (String e) => DropdownMenuItem(
-    //         value: e,
-    //         child: Text(e),
-    //       ),
-    //     )
-    //     .toList();
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -133,25 +138,10 @@ class _QRCodeListState extends State<QRCodeList> {
             top: 8,
             left: 16,
             right: 16,
-            // bottom: 16,
           ),
           padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
-              // const Text('Month: '),
-              // DropdownButton<String>(
-              //   hint: const Text('select'),
-              //   value: _month,
-              //   items: items,
-              //   onChanged: _setMonth,
-              // ),
-              // const Text('Year: '),
-              // DropdownButton<String>(
-              //   hint: const Text('select'),
-              //   value: _month,
-              //   items: items,
-              //   onChanged: _setMonth,
-              // ),
               OutlinedButton(
                 onPressed: _selectMonth,
                 child: Text(_expirationDate.monthDesc()),
@@ -179,5 +169,98 @@ class _QRCodeListState extends State<QRCodeList> {
     if (selectedDate != null) {
       _setDate(selectedDate);
     }
+  }
+
+  void _showDialogDelete(int id) {
+    final idx = _codes.indexWhere((c) => c.id == id);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      useRootNavigator: true,
+      builder: (context) {
+        return AlertDialog(
+          content: Text(
+            'Delete Code: ${_codes[idx].value}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteCode(id).then((value) => Navigator.of(context).pop());
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteCode(int id) async {
+    final db = DBService();
+    const now = null;
+    await db.deleteQRCodes(id);
+
+    setState(() {
+      _codes.removeWhere((c) => c.id == id);
+    });
+  }
+
+  void _showDialogUnmarkUsed(int id) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      useRootNavigator: true,
+      builder: (context) {
+        return AlertDialog(
+          content: const Text(
+            'Undo "Done" for this code?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _unmarkUsed(id).then((value) => Navigator.of(context).pop());
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _unmarkUsed(int id) async {
+    final db = DBService();
+    const now = null;
+    await db.toggleCodeUsed(id, now);
+
+    final idx = _codes.indexWhere((c) => c.id == id);
+
+    if (idx == -1) {
+      return;
+    }
+
+    setState(() {
+      _codes[idx] = QRCode(
+        id: _codes[idx].id,
+        value: _codes[idx].value,
+        createdAt: _codes[idx].createdAt,
+        expiresAt: _codes[idx].expiresAt,
+        usedAt: now,
+        validForMonth: _codes[idx].validForMonth,
+      );
+    });
   }
 }
