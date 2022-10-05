@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcode_keeper/models/code.dart';
 
 class QRCodeDisplayPage extends StatefulWidget {
-  const QRCodeDisplayPage({Key? key}) : super(key: key);
+  const QRCodeDisplayPage(
+      {required PersistentTabController tabBarController, Key? key})
+      : _persistentTabController = tabBarController,
+        super(key: key);
+
+  final PersistentTabController _persistentTabController;
 
   @override
   State<QRCodeDisplayPage> createState() => _QRCodeDisplayPageState();
@@ -48,7 +54,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                   top: 16,
                   bottom: 5,
                 ),
-                color: Colors.amber,
                 width: qrSize,
                 height: qrSize,
                 child: QrImage(
@@ -76,24 +81,23 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                   icon: const Icon(Icons.done),
                   label: Text(isDone ? 'Undone' : 'Done'),
                   style: ElevatedButton.styleFrom(
-                    primary: isDone
-                        ? Colors.deepOrange.shade600
-                        : Colors.lightGreen.shade700,
+                    primary: Colors.lightGreen.shade700,
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     textStyle: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      isDone = !isDone;
-                      if (isDone) {
-                        useDate = DateTime.now();
-                      }
-                    });
-                    // Navigator.of(context).pop();
-                  },
+                  onPressed: isDone
+                      ? null
+                      : () {
+                          setState(() {
+                            isDone = !isDone;
+                            if (isDone) {
+                              useDate = DateTime.now();
+                            }
+                          });
+                        },
                 ),
               ),
               if (!isDone && isOutdated)

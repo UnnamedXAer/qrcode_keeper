@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:month_year_picker/month_year_picker.dart';
-import 'package:qrcode_keeper/pages/home_page.dart';
+import 'package:qrcode_keeper/layout/bottom_tabs_layout.dart';
+import 'package:qrcode_keeper/pages/qrcode_lookup_page.dart';
 import 'package:qrcode_keeper/pages/qrcode_add_page.dart';
 import 'package:qrcode_keeper/pages/qrcode_display_page.dart';
 import 'package:qrcode_keeper/services/database.dart';
@@ -30,12 +31,15 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
       ),
-      home: const QRCodeDisplayPage(),
-      routes: {
-        '/qr-lookup': (context) => const HomePage(),
-        '/qr-display': (context) => const QRCodeDisplayPage(),
-        '/qr-add': (context) => const QRCodeAddPage(),
-      },
+      home: const BottomTabsLayout(),
+      // home: const QRCodeDisplayPage(),
+      // routes: {
+      //   '/qr-lookup': (context) => const QRLookupPage(),
+      //   '/qr-display': (context) => const QRCodeDisplayPage(),
+      //   '/qr-add': (context) => const QRCodeAddPage(),
+      // },
     );
   }
 }
+
+

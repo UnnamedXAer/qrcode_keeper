@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/widgets/add_codes/qrcode_list.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+class QRLookupPage extends StatelessWidget {
+  const QRLookupPage(
+      {required PersistentTabController tabBarController, Key? key})
+      : _persistentTabController = tabBarController,
+        super(key: key);
+
+  final PersistentTabController _persistentTabController;
 
   @override
   Widget build(BuildContext context) {
@@ -17,20 +23,6 @@ class HomePage extends StatelessWidget {
           Navigator.of(context).pushNamed('/qr-display', arguments: code);
         },
       ),
-      persistentFooterButtons: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pushNamed('/qr-display');
-          },
-          child: const Text('Display'),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pushNamed('/qr-add');
-          },
-          child: const Text('Add'),
-        ),
-      ],
     );
   }
 }

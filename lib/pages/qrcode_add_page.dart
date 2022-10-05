@@ -3,13 +3,20 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:month_year_picker/month_year_picker.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/helpers/snackabar.dart';
+import 'package:qrcode_keeper/pages/qrcode_display_page.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/add_codes/scanned_codes_bottom_sheet_content.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 
 class QRCodeAddPage extends StatefulWidget {
-  const QRCodeAddPage({Key? key}) : super(key: key);
+  const QRCodeAddPage(
+      {required PersistentTabController tabBarController, Key? key})
+      : _persistentTabController = tabBarController,
+        super(key: key);
+
+  final PersistentTabController _persistentTabController;
 
   @override
   State<QRCodeAddPage> createState() => _QRCodeAddPageState();
@@ -255,6 +262,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
 
     showModalBottomSheet(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -308,7 +316,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
           mounted: mounted,
           level: MessageLevel.success,
         );
-        Navigator.of(context).pop();
+        widget._persistentTabController.jumpToTab(0);
       }
     } catch (err) {
       log('Add QRs:', error: err);
