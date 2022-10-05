@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qrcode_keeper/models/code.dart';
 
 class QRCodeDisplayPage extends StatefulWidget {
   const QRCodeDisplayPage({Key? key}) : super(key: key);
@@ -9,7 +10,7 @@ class QRCodeDisplayPage extends StatefulWidget {
 }
 
 class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
-  String qrCode = '0243350611';
+  String qrCode = '895479044';
   bool isDone = false;
   DateTime? useDate;
   DateTime? expirationDate;
@@ -18,7 +19,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
   @override
   void initState() {
     super.initState();
-    expirationDate = DateTime.now().subtract(Duration(days: 1));
+    expirationDate = DateTime.now().add(Duration(days: 1));
     isOutdated =
         expirationDate != null && expirationDate!.isBefore(DateTime.now());
   }
@@ -26,6 +27,9 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
   @override
   Widget build(BuildContext context) {
     final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
+    final args = ModalRoute.of(context)?.settings.arguments as QRCode?;
+
+    final codeValue = args?.value ?? qrCode;
 
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +52,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                 width: qrSize,
                 height: qrSize,
                 child: QrImage(
-                  data: qrCode,
+                  data: codeValue,
                   version: QrVersions.auto,
                   size: qrSize,
                 ),
@@ -60,7 +64,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                 padding: const EdgeInsets.all(16),
                 color: Colors.blueGrey.shade200,
                 child: Text(
-                  qrCode,
+                  codeValue,
                   textAlign: TextAlign.center,
                   textScaleFactor: 1.3,
                 ),

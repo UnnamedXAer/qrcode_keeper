@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/widgets/add_codes/qrcode_list.dart';
 
 class HomePage extends StatelessWidget {
@@ -10,7 +11,12 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('QRCode Keeper'),
       ),
-      body: QRCodeList(expirationMonth: DateTime.now()),
+      body: QRCodeList(
+        expirationDate: DateTime.now(),
+        onItemPressed: (QRCode code) {
+          Navigator.of(context).pushNamed('/qr-display', arguments: code);
+        },
+      ),
       persistentFooterButtons: [
         TextButton(
           onPressed: () {

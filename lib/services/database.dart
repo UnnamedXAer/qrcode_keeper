@@ -15,42 +15,54 @@ class DBService {
     return _instance;
   }
 
-  /// use once to open database;
-  static Future<void> initialize() async {
-    var databasesPath = await getDatabasesPath();
-    String path = '$databasesPath/qrcodes_db.db';
+  static Future<String> _dbPath() {
+    return getDatabasesPath().then((dir) => '$dir/qrcodes_db.db');
+  }
 
-    _instance._db =
-        await openDatabase(path, version: 1, onCreate: (db, version) async {
-      const createSql =
-          '''CREATE TABLE
+  /// use once before any database operation;
+  static Future<void> initialize() async {
+    // await _deleteDatabase();
+    _instance._db = await openDatabase(await _dbPath(), version: 1,
+        onCreate: (db, version) async {
+      const createSql = '''CREATE TABLE
           ${QRCodeNS.table} (
             ${QRCodeNS.cId} INTEGER PRIMARY KEY, 
             ${QRCodeNS.cValue} TEXT NOT NULL,
             ${QRCodeNS.cCreatedAt} INTEGER NOT NULL,
             ${QRCodeNS.cUsedAt} INTEGER,
-            ${QRCodeNS.cExpiresAt} INTEGER
+            ${QRCodeNS.cExpiresAt} INTEGER,
+            ${QRCodeNS.cValidForMonth} INTEGER default 0
             )
             ''';
 
-      if (kDebugMode) {
-        print('create sql: "$createSql"');
-      }
+      debugPrint('creating tables... \n$createSql');
 
       await db.execute(
         createSql,
       );
+
+      if (kDebugMode) {
+        print('tables created.');
+      }
     }, onOpen: (db) {
-      print('db ${db.path} opened');
+      debugPrint('db ${db.path} opened');
     });
   }
 
-  Future<void> saveQrCodes(
-    List<String> codes,
-    Map<String, bool> usedCodes,
-  ) async {
+  Future<void> saveQrCodes({
+    required List<String> codes,
+    required Map<String, bool> usedCodes,
+    required DateTime? expireAt,
+    required bool validForMonth,
+  }) async {
     if (codes.isEmpty) {
       return;
+    }
+
+    if (validForMonth) {
+      expireAt = DateTime(expireAt!.year, expireAt.month + 1).subtract(
+        const Duration(milliseconds: 1),
+      );
     }
 
     final now = DateTime.now();
@@ -59,8 +71,9 @@ class DBService {
       (i) => QRCode(
         value: codes[i],
         createdAt: now,
-        expiresAt: null,
+        expiresAt: expireAt,
         usedAt: usedCodes[codes[i]] ?? false ? now : null,
+        validForMonth: validForMonth,
       ).toMap(),
     );
 
@@ -70,9 +83,7 @@ class DBService {
     }
 
     final results = await batch.commit();
-    if (kDebugMode) {
-      print('inserted codes: ${results.length}');
-    }
+    debugPrint('inserted codes: ${results.length}');
   }
 
   Future<List<QRCode>> getCodesForMonth(
@@ -82,18 +93,17 @@ class DBService {
     final dateStart = DateTime(expirationMonth.year, expirationMonth.month);
     final dateEnd = DateTime(dateStart.year, dateStart.month + 1, 1);
 
-    log('$dateStart');
-    log('$dateEnd');
+    debugPrint('getCodesForMonth: $dateStart / $dateEnd, $showExpired');
 
     String where =
-        '${QRCodeNS.cExpiresAt} >= ? and ${QRCodeNS.cExpiresAt} <= ?';
+        '(${QRCodeNS.cExpiresAt} >= ? and ${QRCodeNS.cExpiresAt} <= ?)';
     List<Object?> whereArgs = [
       dateStart.millisecondsSinceEpoch,
       dateEnd.microsecondsSinceEpoch
     ];
 
     if (!showExpired) {
-      where += ' and ${QRCodeNS.cExpiresAt} is null';
+      where += ' or ${QRCodeNS.cExpiresAt} is null';
     }
 
     final data = await _db.query(
@@ -103,30 +113,27 @@ class DBService {
         QRCodeNS.cCreatedAt,
         QRCodeNS.cValue,
         QRCodeNS.cExpiresAt,
-        QRCodeNS.cUsedAt
+        QRCodeNS.cUsedAt,
+        QRCodeNS.cValidForMonth,
       ],
-      // where: where,
-      // whereArgs: whereArgs,
+      where: where,
+      whereArgs: whereArgs,
       orderBy: QRCodeNS.cCreatedAt,
     );
 
     final List<QRCode> qrCodes = data.map((e) => QRCode.fromMap(e)).toList();
-    deleteQRCodes(qrCodes.map((e) => e.id).toList());
+    // deleteQRCodes(qrCodes.map((e) => e.id).toList());
 
-    if (kDebugMode) {
-      print('codes for: $expirationMonth, cnt: ${qrCodes.length}');
-    }
+    debugPrint('codes for: $expirationMonth, cnt: ${qrCodes.length}');
 
     return qrCodes;
   }
 
-  Future<void> deleteQRCodes(List<int> ids) async {
+  Future<void> deleteQRCodes(List<num> ids) async {
     final result = await _db.rawDelete(
         'DELETE FROM ${QRCodeNS.table} WHERE ${QRCodeNS.cId} IN (?)', [ids]);
 
-    if (kDebugMode) {
-      print('deleting codes with ids: $ids, result: $result');
-    }
+    debugPrint('deleting codes with ids: $ids, result: $result');
   }
 
   Future<void> toggleCodeUsed(int id, DateTime? date) async {
@@ -138,5 +145,14 @@ class DBService {
       throw Exception(
           'failed to toggle as used for code with id: $id, date: $date');
     }
+  }
+
+  static Future<void> _deleteDatabase() async {
+    if (!kDebugMode) {
+      return;
+    }
+    final path = await _dbPath();
+    await deleteDatabase(path);
+    log('your db at path "$path" deleted');
   }
 }

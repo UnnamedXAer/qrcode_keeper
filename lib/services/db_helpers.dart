@@ -7,4 +7,5 @@ class QRCodeNS {
   static const cCreatedAt = 'createdAt';
   static const cUsedAt = 'usedAt';
   static const cExpiresAt = 'expiresAt';
+  static const cValidForMonth = 'validForMonth';
 }
