@@ -85,10 +85,10 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                       ),
                       width: qrSize,
                       height: qrSize,
-                      child: QrImage(
+                      child: _buildQrCode(
                         data: code.value,
-                        version: QrVersions.auto,
                         size: qrSize,
+                        onTap: _qrcodeTapped,
                       ),
                     ),
                     Container(
@@ -177,6 +177,22 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                   ],
                 ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQrCode({
+    required String data,
+    double? size,
+    void Function()? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: QrImage(
+        data: data,
+        version: QrVersions.auto,
+        size: size,
+        backgroundColor: Colors.white,
       ),
     );
   }
@@ -319,5 +335,31 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
       _expirationDate = date;
     });
     _getCodes();
+  }
+
+  void _qrcodeTapped() {
+    final code = _codes[_selectedCodeIdx];
+
+    showGeneralDialog(
+      context: context,
+      barrierColor: Theme.of(context).scaffoldBackgroundColor,
+      barrierDismissible: true,
+      barrierLabel: code.value,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final size = MediaQuery.of(context).size;
+        return SafeArea(
+            child: Container(
+          width: size.width,
+          height: size.height,
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: _buildQrCode(
+              data: code.value,
+              onTap: () => Navigator.pop(context),
+            ),
+          ),
+        ));
+      },
+    );
   }
 }
