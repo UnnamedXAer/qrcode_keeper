@@ -1,10 +1,10 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/helpers/snackabar.dart';
+import 'package:qrcode_keeper/pages/qrcode_scann_page.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/add_codes/scanned_codes_bottom_sheet_content.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
@@ -24,7 +24,6 @@ class QRCodeAddPage extends StatefulWidget {
 class _QRCodeAddPageState extends State<QRCodeAddPage> {
   final List<String> _codes = [];
   final Map<String, bool> _usedCodes = {};
-  bool _openCamera = false;
   bool _saving = false;
   late DateTime _expirationDate;
   bool _neverExpire = false;
@@ -43,7 +42,6 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
   @override
   Widget build(BuildContext context) {
     final maxWidth = MediaQuery.of(context).size.shortestSide;
-    final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,36 +55,6 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.only(
-                    top: 16,
-                    bottom: 5,
-                  ),
-                  color: Colors.grey.shade200,
-                  width: qrSize,
-                  height: qrSize,
-                  child: _openCamera
-                      ? MobileScanner(
-                          allowDuplicates: false,
-                          onDetect: (barcode, args) {
-                            if (barcode.rawValue == null) {
-                              debugPrint('Failed to scan Barcode');
-                            } else {
-                              final String code = barcode.rawValue!;
-                              debugPrint('Barcode found! $code');
-                              if (!_codes.contains(code)) {
-                                setState(() {
-                                  _codes.add(code);
-                                });
-                              }
-                            }
-                          })
-                      : const Icon(
-                          Icons.camera,
-                          color: Colors.grey,
-                        ),
-                ),
                 Container(
                   margin: const EdgeInsets.only(
                     bottom: 5,
@@ -103,11 +71,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                       size: 30,
                     ),
                     label: Text(
-                      _openCamera
-                          ? 'Stop scanning'
-                          : _codes.isEmpty
-                              ? 'Scan code(s)'
-                              : 'Continue scanning',
+                      _codes.isEmpty ? 'Scan code(s)' : 'Continue scanning',
                     ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -116,12 +80,19 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: () {
-                      if (_saving && !_openCamera) {
+                    onPressed: () async {
+                      if (_saving) {
                         return;
                       }
+                      final updatedCodes = await Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute(
+                          fullscreenDialog: true,
+                          builder: (context) => QRCodeScanPage(codes: _codes),
+                        ),
+                      );
                       setState(() {
-                        _openCamera = !_openCamera;
+                        _codes.clear();
+                        _codes.addAll(updatedCodes);
                       });
                     },
                   ),
@@ -225,12 +196,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _openCamera = false;
-                      });
-                      _saveCodes();
-                    },
+                    onPressed: _saveCodes,
                   ),
                 ),
               ],
@@ -245,9 +211,6 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
     if (_saving) {
       return;
     }
-    setState(() {
-      _openCamera = false;
-    });
 
     showModalBottomSheet(
         context: context,
