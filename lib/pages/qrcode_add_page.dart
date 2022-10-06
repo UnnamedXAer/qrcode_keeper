@@ -5,6 +5,7 @@ import 'package:month_year_picker/month_year_picker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/helpers/snackabar.dart';
 import 'package:qrcode_keeper/pages/qrcode_scann_page.dart';
+import 'package:qrcode_keeper/pages/qrcode_text_enter_page.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/add_codes/scanned_codes_bottom_sheet_content.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
@@ -22,7 +23,8 @@ class QRCodeAddPage extends StatefulWidget {
 }
 
 class _QRCodeAddPageState extends State<QRCodeAddPage> {
-  final List<String> _codes = [];
+  final List<String> _enteredWithTextCodes = [];
+  final List<String> _scannedCodes = [];
   final Map<String, bool> _usedCodes = {};
   bool _saving = false;
   late DateTime _expirationDate;
@@ -56,14 +58,6 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  margin: const EdgeInsets.only(
-                    bottom: 5,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.blueGrey.shade200,
-                  child: Text('Scanned unique ${_codes.length} code(s).'),
-                ),
-                Container(
                   margin: const EdgeInsets.only(top: 8, bottom: 16),
                   child: ElevatedButton.icon(
                     icon: const Icon(
@@ -71,7 +65,9 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                       size: 30,
                     ),
                     label: Text(
-                      _codes.isEmpty ? 'Scan code(s)' : 'Continue scanning',
+                      _scannedCodes.isEmpty
+                          ? 'Scan codes'
+                          : 'Continue scanning',
                     ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -80,21 +76,42 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onPressed: () async {
-                      if (_saving) {
-                        return;
-                      }
-                      final updatedCodes = await Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          fullscreenDialog: true,
-                          builder: (context) => QRCodeScanPage(codes: _codes),
+                    onPressed: _openCodesScannerPage,
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 16),
+                  child: ElevatedButton.icon(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: const [
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 30,
                         ),
-                      );
-                      setState(() {
-                        _codes.clear();
-                        _codes.addAll(updatedCodes);
-                      });
-                    },
+                        Positioned(
+                          bottom: -5,
+                          right: 0,
+                          child: Icon(
+                            Icons.onetwothree_outlined,
+                            size: 20,
+                          ),
+                        )
+                      ],
+                    ),
+                    label: Text(
+                      _enteredWithTextCodes.isEmpty
+                          ? 'Enter Text with Codes'
+                          : 'Continue Entering',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      textStyle: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: _openCodesTextEnterPage,
                   ),
                 ),
                 Row(
@@ -105,7 +122,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                       child: OutlinedButton(
                         onPressed: () {
                           setState(() {
-                            _codes.clear();
+                            _scannedCodes.clear();
                             _usedCodes.clear();
                           });
                         },
@@ -115,14 +132,14 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                             color: Colors.deepOrange.shade600,
                           ),
                         ),
-                        child: const Text('Clear scanned codes'),
+                        child: const Text('Clear Added Codes'),
                       ),
                     ),
                     const SizedBox(width: 24),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _showBottomSheetWithCodes,
-                        child: const Text('Show scanned codes'),
+                        child: const Text('Show Added Codes'),
                       ),
                     ),
                   ],
@@ -173,9 +190,9 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                     ),
                   ],
                 ),
-                if (_codes.isNotEmpty)
+                if (_scannedCodes.isNotEmpty)
                   Text(
-                    'You have ${_codes.length} codes to save.\n'
+                    'You have ${_scannedCodes.length} codes to save.\n'
                     '(where marked as used: ${_usedCodes.values.where((x) => x).length})',
                     textAlign: TextAlign.center,
                   ),
@@ -187,7 +204,8 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                       Icons.save_outlined,
                       size: 30,
                     ),
-                    label: const Text("Save code(s)"),
+                    label:
+                        Text("Save code${_scannedCodes.length > 1 ? 's' : ''}"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -221,7 +239,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
         ),
         builder: (context) {
           return ScannedCodesBottomSheetContent(
-              codes: _codes,
+              codes: _scannedCodes,
               usedCodes: _usedCodes,
               onCheckCode: (String code, bool v) => _usedCodes[code] = v,
               onSaveCodes: _saveCodes,
@@ -229,7 +247,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
                 String code,
               ) {
                 _usedCodes.remove(code);
-                _codes.removeWhere((x) => x == code);
+                _scannedCodes.removeWhere((x) => x == code);
               });
         }).then((_) => setState(() {}));
   }
@@ -237,7 +255,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
   Future<void> _saveCodes() async {
     if (_saving) return;
 
-    if (_codes.isEmpty) {
+    if (_scannedCodes.isEmpty) {
       SnackbarCustom.show(context,
           message: '❗ Nothing to save! Idiot. Scan some codes.',
           level: MessageLevel.warning,
@@ -256,7 +274,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
     try {
       await Future.delayed(const Duration(seconds: 1));
       await db.saveQrCodes(
-        codes: _codes,
+        codes: _scannedCodes,
         usedCodes: _usedCodes,
         expireAt: _neverExpire ? null : _expirationDate,
         validForMonth: _validForMonth,
@@ -264,7 +282,8 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
       if (mounted) {
         SnackbarCustom.show(
           context,
-          message: 'saved codes successfully',
+          message:
+              'saved code${_scannedCodes.length > 1 ? 's' : ''} successfully',
           mounted: mounted,
           level: MessageLevel.success,
         );
@@ -278,7 +297,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
       });
       SnackbarCustom.show(
         context,
-        message: 'save qrcodes: $err',
+        message: 'Save error: $err',
         mounted: mounted,
         level: MessageLevel.error,
       );
@@ -304,5 +323,37 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
         _expirationDate = picked!;
       });
     }
+  }
+
+  void _openCodesTextEnterPage() async {
+    if (_saving) {
+      return;
+    }
+    final updatedCodes = await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => QRCodeTextEnterPage(codes: _enteredWithTextCodes),
+      ),
+    );
+    setState(() {
+      _enteredWithTextCodes.clear();
+      _enteredWithTextCodes.addAll(updatedCodes);
+    });
+  }
+
+  void _openCodesScannerPage() async {
+    if (_saving) {
+      return;
+    }
+    final updatedCodes = await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => QRCodeScanPage(codes: _scannedCodes),
+      ),
+    );
+    setState(() {
+      _scannedCodes.clear();
+      _scannedCodes.addAll(updatedCodes);
+    });
   }
 }
