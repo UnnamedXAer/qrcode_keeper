@@ -59,7 +59,9 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ..._buildMonthPicker(),
-                    const Text('Life... no codes found.', textScaleFactor: 1.4),
+                    const Text(
+                        'There are tough times in life... no codes found.',
+                        textScaleFactor: 1.4),
                     const SizedBox(height: 16),
                     const Text(
                         'Scan some or report a bug if you believe there should be some unused codes for current month.'),
@@ -251,7 +253,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
 
     if (kReleaseMode) {
       exit(0);
-      return;
     }
 
     final idx = _codes.indexWhere((c) => c.id == id);

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/services/database.dart';
-import 'package:qrcode_keeper/widgets/add_codes/error_text.dart';
+import 'package:qrcode_keeper/widgets/error_text.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 
 // const months = [
