@@ -93,7 +93,11 @@ class SnackbarCustom {
   static void hideCurrent(
     BuildContext context, {
     SnackBarClosedReason reason = SnackBarClosedReason.hide,
+    bool? mounted,
   }) {
+    if (mounted == false) {
+      return;
+    }
     ScaffoldMessenger.of(context).hideCurrentSnackBar(reason: reason);
   }
 }

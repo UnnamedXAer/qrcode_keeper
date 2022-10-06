@@ -5,21 +5,6 @@ import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 
-// const months = [
-//   'January',
-//   'February',
-//   'March',
-//   'April',
-//   'May',
-//   'June',
-//   'July',
-//   'August',
-//   'September',
-//   'October',
-//   'November',
-//   'December',
-// ];
-
 class QRCodeList extends StatefulWidget {
   const QRCodeList({
     required this.expirationDate,
@@ -141,10 +126,14 @@ class _QRCodeListState extends State<QRCodeList> {
           ),
           padding: const EdgeInsets.all(8.0),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Text('Month: '),
               OutlinedButton(
                 onPressed: _selectMonth,
-                child: Text(_expirationDate.monthDesc()),
+                child: Text(
+                  _expirationDate.monthDesc(),
+                ),
               )
             ],
           ),

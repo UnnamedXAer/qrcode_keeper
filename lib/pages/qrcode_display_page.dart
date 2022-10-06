@@ -68,9 +68,29 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
                     const SizedBox(height: 16),
                     Align(
                       alignment: Alignment.center,
-                      child: TextButton(
-                          onPressed: _getCodes,
-                          child: const Text('Try to Refresh')),
+                      child: TextButton.icon(
+                        onPressed: () =>
+                            widget._persistentTabController.jumpToTab(2),
+                        icon: Stack(
+                          clipBehavior: Clip.none,
+                          children: const [
+                            Icon(Icons.qr_code, size: 30),
+                            Positioned(
+                                right: -6,
+                                top: -6,
+                                child: Icon(
+                                  Icons.add,
+                                  size: 14,
+                                )),
+                          ],
+                        ),
+                        label: const Text('Add Some Codes'),
+                        style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            textStyle: const TextStyle(
+                              fontSize: 20,
+                            )),
+                      ),
                     )
                   ],
                 )
