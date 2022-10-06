@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/models/code.dart';
-import 'package:qrcode_keeper/widgets/add_codes/qrcode_list.dart';
+import 'package:qrcode_keeper/widgets/qrcode_list.dart';
 
 class QRLookupPage extends StatelessWidget {
   const QRLookupPage(
