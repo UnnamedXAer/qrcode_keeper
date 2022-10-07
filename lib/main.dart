@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
-// import 'package:intl/intl.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:qrcode_keeper/layout/bottom_tabs_layout.dart';
 import 'package:qrcode_keeper/services/database.dart';
@@ -11,8 +9,6 @@ void main() async {
   await DBService.initialize();
 
   await initializeDateFormatting();
-  // await initializeDateFormatting("en_US");
-  // Intl.defaultLocale = 'en_US';
 
   runApp(const MyApp());
 }
@@ -31,18 +27,11 @@ class MyApp extends StatelessWidget {
         Locale('en', 'US'),
       ],
       locale: const Locale.fromSubtags(languageCode: 'en', countryCode: 'US'),
-
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
       ),
       home: const BottomTabsLayout(),
-      // home: const QRCodeDisplayPage(),
-      // routes: {
-      //   '/qr-lookup': (context) => const QRLookupPage(),
-      //   '/qr-display': (context) => const QRCodeDisplayPage(),
-      //   '/qr-add': (context) => const QRCodeAddPage(),
-      // },
     );
   }
 }

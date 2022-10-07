@@ -13,7 +13,7 @@ class BottomTabsLayout extends StatefulWidget {
 
 class _BottomTabsLayoutState extends State<BottomTabsLayout> {
   final PersistentTabController _controller = PersistentTabController(
-    initialIndex: 1,
+    initialIndex: 0,
   );
 
   @override
@@ -58,14 +58,20 @@ class _BottomTabsLayoutState extends State<BottomTabsLayout> {
 
   List<Widget> _buildScreens() {
     return [
-      QRLookupPage(tabBarController: _controller),
       QRCodeDisplayPage(tabBarController: _controller),
+      QRLookupPage(tabBarController: _controller),
       QRCodeAddPage(tabBarController: _controller),
     ];
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
+      PersistentBottomNavBarItem(
+        icon: const Icon(Icons.qr_code_2_outlined),
+        title: "Display",
+        activeColorPrimary: Colors.green.shade600,
+        inactiveColorPrimary: Colors.grey,
+      ),
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.search),
         title: "Lookup",
@@ -78,12 +84,6 @@ class _BottomTabsLayoutState extends State<BottomTabsLayout> {
                 QRCodeDisplayPage(tabBarController: _controller),
           },
         ),
-      ),
-      PersistentBottomNavBarItem(
-        icon: const Icon(Icons.qr_code_2_outlined),
-        title: "Display",
-        activeColorPrimary: Colors.green.shade600,
-        inactiveColorPrimary: Colors.grey,
       ),
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.add),
