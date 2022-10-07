@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:month_year_picker/month_year_picker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcode_keeper/models/code.dart';
+import 'package:qrcode_keeper/models/code_unmarked.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 
@@ -21,17 +23,59 @@ class QRCodeDisplayPage extends StatefulWidget {
   State<QRCodeDisplayPage> createState() => _QRCodeDisplayPageState();
 }
 
-class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
+class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
+    with WidgetsBindingObserver {
   List<QRCode> _codes = [];
   int _selectedCodeIdx = -1;
   String? error;
   bool loading = false;
   DateTime _expirationDate = DateTime.now();
+  bool anyCodeUsedAtThisSession = false;
+  DateTime _lastExitWarnShownAt = DateTime.now();
+  int? _currentCode = 99999;
+  bool _screenChanged = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _getCodes();
+    _checkForNotMarkedCode();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    log('didChangeAppLifecycleState, $state');
+
+    if (state == AppLifecycleState.inactive) {
+      if (anyCodeUsedAtThisSession && !_screenChanged && _currentCode != null) {
+        log('saving code to db: $_currentCode, ');
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      log('checking if any code was cached...: $_currentCode, ');
+      //
+    }
+
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
+  Future<bool> didPushRouteInformation(RouteInformation routeInformation) {
+    log('didPushRouteInformation ${routeInformation.location}');
+
+    return super.didPushRouteInformation(routeInformation);
+  }
+
+  @override
+  Future<bool> didPopRoute() {
+    log('did pop route');
+    return super.didPopRoute();
   }
 
   @override
@@ -244,11 +288,38 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage> {
     ];
   }
 
+  void _checkForNotMarkedCode() async {
+    final db = DBService();
+
+    final QrCodeUnmarked? possibleUnmarkedQRCode =
+        await db.getPossibleUnmarkedQRCode();
+
+    if (!mounted || possibleUnmarkedQRCode == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showMaterialBanner(
+      MaterialBanner(
+        content: Text(
+            'Didn\'t you forget to use "Done" option last time?\nThe code (${possibleUnmarkedQRCode.codeValue}) was seen at ${possibleUnmarkedQRCode.createdAt.format()}.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ScaffoldMessenger.maybeOf(context)?.hideCurrentMaterialBanner();
+              db.deleteQRUnmarkedCodes();
+            },
+            child: const Text("Dismiss"),
+          )
+        ],
+      ),
+    );
+  }
+
   void _getCodes() {
     final db = DBService();
     loading = true;
     db
-        .getCodesForMonth(
+        .getQRCodesForMonth(
       _expirationDate,
     )
         .then(

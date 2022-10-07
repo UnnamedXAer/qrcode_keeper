@@ -313,7 +313,7 @@ class _QRCodeAddPageState extends State<QRCodeAddPage> {
     });
     final db = DBService();
     try {
-      await db.saveQrCodes(
+      await db.saveQRCodes(
         codes: _codes,
         usedCodes: _usedCodes,
         expireAt: _neverExpire ? null : _expirationDate,

@@ -41,7 +41,7 @@ class _QRCodeListState extends State<QRCodeList> {
     final db = DBService();
     loading = true;
     db
-        .getCodesForMonth(
+        .getQRCodesForMonth(
           _expirationDate,
           includeExpired: true,
           includeUsed: true,
@@ -194,7 +194,7 @@ class _QRCodeListState extends State<QRCodeList> {
   Future<void> _deleteCode(int id) async {
     final db = DBService();
     const now = null;
-    await db.deleteQRCodes(id);
+    await db.deleteQRCode(id);
 
     setState(() {
       _codes.removeWhere((c) => c.id == id);

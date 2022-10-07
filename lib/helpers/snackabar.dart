@@ -100,6 +100,11 @@ class SnackbarCustom {
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar(reason: reason);
   }
+
+  static void removeCurrent(BuildContext context,
+      {SnackBarClosedReason reason = SnackBarClosedReason.remove}) {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar(reason: reason);
+  }
 }
 
 class SnackBarActionConfig {
