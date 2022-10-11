@@ -151,7 +151,12 @@ class _QRCodeListState extends State<QRCodeList> {
                 child: Text(
                   _expirationDate.monthDesc(),
                 ),
-              )
+              ),
+              const SizedBox(width: 16),
+              TextButton(
+                onPressed: _getCodes,
+                child: const Text('Refresh'),
+              ),
             ],
           ),
         ),
