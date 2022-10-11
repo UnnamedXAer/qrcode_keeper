@@ -1,4 +1,4 @@
-package kt.qrcodekeeper.qrcode_keeper
+package kt.qrcodekeeper
 
 import io.flutter.embedding.android.FlutterActivity
 

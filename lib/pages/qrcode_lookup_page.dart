@@ -15,7 +15,7 @@ class QRLookupPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QRCode Keeper'),
+        title: const Text('QR Codes'),
       ),
       body: QRCodeList(
         expirationDate: DateTime.now(),

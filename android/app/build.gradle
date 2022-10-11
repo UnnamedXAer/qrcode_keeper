@@ -45,7 +45,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "kt.qrcodekeeper.qrcode_keeper"
+        applicationId "kt.qrcodekeeper"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
         // minSdkVersion flutter.minSdkVersion
@@ -63,6 +63,25 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+	flavorDimensions "flavor-type"
+	productFlavors {
+		production {
+			dimension "flavor-type"
+			resValue "string", "app_name", "QR Keeper"
+			applicationIdSuffix ""
+		}
+		staging {
+			dimension "flavor-type"
+			resValue "string", "app_name", "Stag QR Keeper"
+			applicationIdSuffix ".stg"
+		}
+		development {
+			dimension "flavor-type"
+			resValue "string", "app_name", "Dev QR Keeper"
+			applicationIdSuffix ".dev"
+		}
+	}
 }
 
 flutter {

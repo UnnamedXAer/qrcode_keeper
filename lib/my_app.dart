@@ -1,22 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:qrcode_keeper/layout/bottom_tabs_layout.dart';
-import 'package:qrcode_keeper/services/database.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-  await initializeDateFormatting();
-  await DBService.initialize();
-
-  runApp(const MyApp());
-}
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({required this.flavor, Key? key}) : super(key: key);
+  final String flavor;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +17,7 @@ class MyApp extends StatelessWidget {
         Locale('en', 'US'),
       ],
       locale: const Locale.fromSubtags(languageCode: 'en', countryCode: 'US'),
-      title: 'Flutter Demo',
+      title: 'QR Keeper  ${flavor != 'production' ? flavor : ''}',
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
       ),
