@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:qrcode_keeper/layout/bottom_tabs_layout.dart';
@@ -6,9 +7,10 @@ import 'package:qrcode_keeper/services/database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await DBService.initialize();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await initializeDateFormatting();
+  await DBService.initialize();
 
   runApp(const MyApp());
 }
