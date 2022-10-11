@@ -20,9 +20,10 @@ class QRCodeList extends StatefulWidget {
 
 class _QRCodeListState extends State<QRCodeList> {
   List<QRCode> _codes = [];
-  String? error;
-  bool loading = false;
+  String? _error;
+  bool _loading = false;
   late DateTime _expirationDate;
+  int _getCodesCnt = 0;
 
   @override
   void initState() {
@@ -38,42 +39,58 @@ class _QRCodeListState extends State<QRCodeList> {
   }
 
   void _getCodes() {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    _getCodesCnt++;
+    final currentGetIdx = _getCodesCnt;
+
     final db = DBService();
-    loading = true;
     db
         .getQRCodesForMonth(
-          _expirationDate,
-          includeExpired: true,
-          includeUsed: true,
-        )
+      _expirationDate,
+      includeExpired: true,
+      includeUsed: true,
+    )
         .then(
-          (value) => setState(() {
-            _codes = value;
-            error = null;
-            loading = false;
-          }),
-        )
-        .catchError((err) {
-      error = 'Error: $err';
-      loading = false;
+      (value) {
+        if (currentGetIdx != _getCodesCnt) {
+          debugPrint('skipped, $currentGetIdx, $_getCodesCnt');
+          return;
+        }
+        setState(() {
+          _codes = value;
+          _error = null;
+          _loading = false;
+        });
+      },
+    ).catchError((err) {
+      if (currentGetIdx != _getCodesCnt) {
+        debugPrint('skipped, $currentGetIdx, $_getCodesCnt');
+        return;
+      }
+      setState(() {
+        _error = '$err';
+        _loading = false;
+      });
     });
   }
 
   void _setDate(DateTime date) {
     setState(() {
       _expirationDate = date;
+      _error = null;
     });
     _getCodes();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     Widget content;
-    if (error != null) {
-      content = ErrorText(error!);
-    } else if (loading) {
+    if (_error != null) {
+      content = ErrorText(_error!);
+    } else if (_loading) {
       content = const Center(child: CircularProgressIndicator.adaptive());
     } else if (_codes.isEmpty) {
       content =
@@ -193,7 +210,6 @@ class _QRCodeListState extends State<QRCodeList> {
 
   Future<void> _deleteCode(int id) async {
     final db = DBService();
-    const now = null;
     await db.deleteQRCode(id);
 
     setState(() {
