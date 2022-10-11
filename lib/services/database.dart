@@ -7,7 +7,7 @@ import 'package:qrcode_keeper/services/db_helpers.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DBService {
-  static late final DBService _instance = DBService._internal();
+  static final DBService _instance = DBService._internal();
   late final Database _db;
   static const _dbVersion = 2;
 
@@ -24,11 +24,16 @@ class DBService {
   /// use once before any database operation;
   static Future<void> initialize() async {
     // await _deleteDatabase();
-    _instance._db = await openDatabase(
-      await _dbPath(),
-      version: _dbVersion,
-      onCreate: (db, version) async {
-        const createSql = '''CREATE TABLE
+
+    Future<void> configureDB(Database db) {
+      debugPrint('enabling foreign keys...');
+      return db.execute(
+        'PRAGMA foreign_keys = ON',
+      );
+    }
+
+    void createTableQrCodeV1(Batch db) {
+      const createSql = '''CREATE TABLE
           ${QRCodeNS.table} (
             ${QRCodeNS.cId} INTEGER PRIMARY KEY, 
             ${QRCodeNS.cValue} TEXT NOT NULL,
@@ -39,28 +44,15 @@ class DBService {
             )
             ''';
 
-        debugPrint('creating tables... \n$createSql');
+      debugPrint('creating tables... \n$createSql');
 
-        await db.execute(
-          createSql,
-        );
+      db.execute(
+        createSql,
+      );
+    }
 
-        debugPrint('tables created.');
-      },
-      onOpen: (db) {
-        debugPrint('db ${db.path} opened');
-      },
-      onUpgrade: (db, oldVer, newVer) async {
-        debugPrint("onUpgrade: Migrating from: $oldVer to $newVer");
-
-        if (oldVer == 1) {
-          debugPrint('enabling foreign keys...');
-          await db.execute(
-            'PRAGMA foreign_keys = ON',
-          );
-          debugPrint('foreign keys ENABLED');
-
-          const createSql = '''CREATE TABLE
+    void createTableQrCodeUnmarkedV2(Batch batch) {
+      const createSql = '''CREATE TABLE
           ${QRCodeUnmarkedNS.table} (
             ${QRCodeUnmarkedNS.cId} INTEGER PRIMARY KEY, 
             ${QRCodeUnmarkedNS.cCodeId} INTEGER NOT NULL,
@@ -72,16 +64,33 @@ class DBService {
             )
             ''';
 
-          debugPrint('creating tables... \n$createSql');
+      debugPrint('creating table... \n$createSql');
 
-          await db.execute(
-            createSql,
-          );
+      batch.execute(createSql);
+    }
 
-          if (kDebugMode) {
-            print('Table ${QRCodeUnmarkedNS.table} created.');
-          }
+    _instance._db = await openDatabase(
+      await _dbPath(),
+      version: _dbVersion,
+      onConfigure: configureDB,
+      onCreate: (db, version) async {
+        final batch = db.batch();
+        createTableQrCodeV1(batch);
+        createTableQrCodeUnmarkedV2(batch);
+        await batch.commit();
+      },
+      onOpen: (db) async {
+        debugPrint('db v: ${await db.getVersion()} ${db.path} opened');
+      },
+      onUpgrade: (db, oldVer, newVer) async {
+        debugPrint("onUpgrade: Migrating from: $oldVer to $newVer");
+
+        final batch = db.batch();
+        if (oldVer == 1) {
+          createTableQrCodeUnmarkedV2(batch);
         }
+
+        await batch.commit();
       },
     );
   }
