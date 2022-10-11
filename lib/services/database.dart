@@ -176,7 +176,7 @@ class DBService {
       ],
       where: where,
       whereArgs: whereArgs,
-      orderBy: QRCodeNS.cCreatedAt,
+      orderBy: '${QRCodeNS.cUsedAt} desc, ${QRCodeNS.cExpiresAt} asc, ${QRCodeNS.cCreatedAt} asc',
     );
 
     final List<QRCode> qrCodes = data.map((e) => QRCode.fromMap(e)).toList();
