@@ -23,7 +23,7 @@ class DBService {
 
   /// use once before any database operation;
   static Future<void> initialize() async {
-    // await _deleteDatabase();
+    // await _unsafe_deleteDatabase();
 
     Future<void> configureDB(Database db) {
       debugPrint('enabling foreign keys...');

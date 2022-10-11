@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -10,6 +9,7 @@ import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/models/code_unmarked.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
+import 'package:qrcode_keeper/widgets/error_text.dart';
 
 class QRCodeDisplayPage extends StatefulWidget {
   const QRCodeDisplayPage(
@@ -27,12 +27,13 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     with WidgetsBindingObserver {
   List<QRCode> _codes = [];
   int _selectedCodeIdx = -1;
-  String? error;
-  bool loading = false;
+  String? _error;
+  bool _loading = false;
   DateTime _expirationDate = DateTime.now();
   DateTime? _screenInactivatedAt;
   bool _debugAnyCodeUsed = false;
   bool _screenChanged = false;
+  int _getCodesCnt = 0;
 
   @override
   void initState() {
@@ -52,7 +53,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    log('didChangeAppLifecycleState, $state');
+    debugPrint('didChangeAppLifecycleState, $state');
 
     if (state == AppLifecycleState.inactive &&
         _selectedCodeIdx != -1 &&
@@ -76,8 +77,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
 
   @override
   Widget build(BuildContext context) {
-    final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
-
     final QRCode? code =
         _selectedCodeIdx == -1 ? null : _codes[_selectedCodeIdx];
 
@@ -93,168 +92,22 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
             right: 16,
             bottom: 16,
           ),
-          child: (code == null)
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ..._buildMonthPicker(),
-                    const Text(
-                        'There are tough times in life... no codes found.',
-                        textScaleFactor: 1.4),
-                    const SizedBox(height: 16),
-                    const Text(
-                        'Scan some or report a bug if you believe there should be some unused codes for current month.'),
-                    const SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.center,
-                      child: TextButton.icon(
-                        onPressed: () =>
-                            widget._persistentTabController.jumpToTab(2),
-                        icon: Stack(
-                          clipBehavior: Clip.none,
-                          children: const [
-                            Icon(Icons.qr_code, size: 30),
-                            Positioned(
-                                right: -6,
-                                top: -6,
-                                child: Icon(
-                                  Icons.add,
-                                  size: 14,
-                                )),
-                          ],
-                        ),
-                        label: const Text('Add Some Codes'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                          textStyle: const TextStyle(
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    )
-                  ],
-                )
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ..._buildMonthPicker(),
-                    Container(
-                      alignment: Alignment.center,
-                      margin: const EdgeInsets.only(
-                        top: 8,
-                        bottom: 5,
-                      ),
-                      width: qrSize,
-                      height: qrSize,
-                      child: _buildQrCode(
-                        data: code.value,
-                        size: qrSize,
-                        onTap: _qrcodeTapped,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      margin: const EdgeInsets.only(bottom: 8),
-                      color: Colors.blueGrey.shade200,
-                      child: Text(
-                        code.value,
-                        textAlign: TextAlign.center,
-                        textScaleFactor: 1.3,
-                      ),
-                    ),
-                    Text(
-                      'This is a not used code for the selected month.\nWhen scanned use the Done button to mark it as used. The app will then close.',
-                      textScaleFactor: 0.9,
-                      style: TextStyle(
-                          color: (code.usedAt != null ? Colors.grey : null)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 32,
-                      ),
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.done),
-                        label:
-                            Text(code.usedAt != null ? 'Already Used' : 'Done'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.lightGreen.shade700,
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          textStyle: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        onPressed: code.usedAt != null
-                            ? null
-                            : () => _markAsUsed(code.id),
-                      ),
-                    ),
-                    if (code.expiresAt != null &&
-                        code.expiresAt!.isBefore(DateTime.now()))
-                      Text(
-                        'This code expired at ${code.expiresAt!.format(withTime: false)}.',
-                        textAlign: TextAlign.center,
-                      ),
-                    if (code.usedAt != null)
-                      TextButton(
-                        onPressed: () => _showDialogUnmarkUsed(code.id),
-                        child: Text(
-                          'This code was used at ${code.usedAt!.format()}.',
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 12),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            OutlinedButton(
-                              child: const Text('Previous'),
-                              onPressed: () {
-                                setState(() {
-                                  _selectedCodeIdx -= 1;
-                                  if (_selectedCodeIdx < 0) {
-                                    _selectedCodeIdx = _codes.length - 1;
-                                  }
-                                });
-                              },
-                            ),
-                            OutlinedButton(
-                              child: const Text('Next'),
-                              onPressed: () {
-                                setState(() {
-                                  _selectedCodeIdx += 1;
-                                  if (_selectedCodeIdx >= _codes.length) {
-                                    _selectedCodeIdx = 0;
-                                  }
-                                });
-                              },
-                            ),
-                          ]),
-                    ),
-                    Text(
-                        'Got ${_codes.length} code${_codes.length > 1 ? 's' : ''} currently at position ${_selectedCodeIdx + 1}.'),
-                  ],
-                ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ..._buildMonthPicker(),
+              if (_error != null)
+                ErrorText(_error!)
+              else if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else if (code != null)
+                ..._buildQrCodeContent(code)
+              else
+                ..._buildNoCodesContent()
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildQrCode({
-    required String data,
-    double? size,
-    void Function()? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: QrImage(
-        data: data,
-        version: QrVersions.auto,
-        size: size,
-        backgroundColor: Colors.white,
       ),
     );
   }
@@ -282,6 +135,156 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         color: Colors.blueGrey.shade900,
       )
     ];
+  }
+
+  List<Widget> _buildNoCodesContent() {
+    return [
+      const Text('There are tough times in life... no codes found.',
+          textScaleFactor: 1.4),
+      const SizedBox(height: 16),
+      const Text(
+          'Scan some or report a bug if you believe there should be some unused codes for current month.'),
+      const SizedBox(height: 16),
+      Align(
+        alignment: Alignment.center,
+        child: TextButton.icon(
+          onPressed: () => widget._persistentTabController.jumpToTab(2),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: const [
+              Icon(Icons.qr_code, size: 30),
+              Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Icon(
+                    Icons.add,
+                    size: 14,
+                  )),
+            ],
+          ),
+          label: const Text('Add Some Codes'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.blue,
+            textStyle: const TextStyle(
+              fontSize: 20,
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildQrCodeContent(QRCode code) {
+    final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
+
+    return [
+      Container(
+        alignment: Alignment.center,
+        margin: const EdgeInsets.only(
+          top: 8,
+          bottom: 5,
+        ),
+        width: qrSize,
+        height: qrSize,
+        child: _buildQrCode(
+          data: code.value,
+          size: qrSize,
+          onTap: _qrcodeTapped,
+        ),
+      ),
+      Container(
+        padding: const EdgeInsets.all(8),
+        margin: const EdgeInsets.only(bottom: 8),
+        color: Colors.blueGrey.shade200,
+        child: Text(
+          code.value,
+          textAlign: TextAlign.center,
+          textScaleFactor: 1.3,
+        ),
+      ),
+      Text(
+        'This is a not used code for the selected month.\nWhen scanned use the Done button to mark it as used. The app will then close.',
+        textScaleFactor: 0.9,
+        style: TextStyle(color: (code.usedAt != null ? Colors.grey : null)),
+      ),
+      Container(
+        padding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 32,
+        ),
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.done),
+          label: Text(code.usedAt != null ? 'Already Used' : 'Done'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.lightGreen.shade700,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            textStyle: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          onPressed: code.usedAt != null ? null : () => _markAsUsed(code.id),
+        ),
+      ),
+      if (code.expiresAt != null && code.expiresAt!.isBefore(DateTime.now()))
+        Text(
+          'This code expired at ${code.expiresAt!.format(withTime: false)}.',
+          textAlign: TextAlign.center,
+        ),
+      if (code.usedAt != null)
+        TextButton(
+          onPressed: () => _showDialogUnmarkUsed(code.id),
+          child: Text(
+            'This code was used at ${code.usedAt!.format()}.',
+          ),
+        ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+        child:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          OutlinedButton(
+            child: const Text('Previous'),
+            onPressed: () {
+              setState(() {
+                _selectedCodeIdx -= 1;
+                if (_selectedCodeIdx < 0) {
+                  _selectedCodeIdx = _codes.length - 1;
+                }
+              });
+            },
+          ),
+          OutlinedButton(
+            child: const Text('Next'),
+            onPressed: () {
+              setState(() {
+                _selectedCodeIdx += 1;
+                if (_selectedCodeIdx >= _codes.length) {
+                  _selectedCodeIdx = 0;
+                }
+              });
+            },
+          ),
+        ]),
+      ),
+      Text(
+          'Got ${_codes.length} code${_codes.length > 1 ? 's' : ''} currently at position ${_selectedCodeIdx + 1}.'),
+    ];
+  }
+
+  Widget _buildQrCode({
+    required String data,
+    double? size,
+    void Function()? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: QrImage(
+        data: data,
+        version: QrVersions.auto,
+        size: size,
+        backgroundColor: Colors.white,
+      ),
+    );
   }
 
   void _checkForNotMarkedCode() async {
@@ -354,24 +357,41 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   }
 
   void _getCodes() {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    _getCodesCnt++;
+    final currentGetIdx = _getCodesCnt;
+
     final db = DBService();
-    loading = true;
     db
         .getQRCodesForMonth(
       _expirationDate,
     )
         .then(
       (value) {
+        if (currentGetIdx != _getCodesCnt) {
+          debugPrint('skipped, $currentGetIdx, $_getCodesCnt');
+          return;
+        }
         setState(() {
           _selectedCodeIdx = value.isEmpty ? -1 : 0;
           _codes = value;
-          error = null;
-          loading = false;
+          _error = null;
+          _loading = false;
         });
       },
     ).catchError((err) {
-      error = 'Error: $err';
-      loading = false;
+      if (currentGetIdx != _getCodesCnt) {
+        debugPrint('skipped, $currentGetIdx, $_getCodesCnt');
+        return;
+      }
+      setState(() {
+        _error = 'Error: $err';
+        _loading = false;
+      });
     });
   }
 
@@ -494,13 +514,19 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   }
 
   void _onScreenChangeHandler() {
-    log('screen changed');
-    _screenChanged =
-        _screenChanged || widget._persistentTabController.index != 0;
-    widget._persistentTabController.removeListener(_onScreenChangeHandler);
-    ScaffoldMessenger.maybeOf(context)?.removeCurrentMaterialBanner();
+    debugPrint('screen changed');
 
-    final db = DBService();
-    db.deleteQRUnmarkedCodes();
+    if (widget._persistentTabController.index == 0) {
+      if (!_loading && _codes.isEmpty) {
+        _getCodes();
+      }
+    } else {
+      if (!_screenChanged) {
+        _screenChanged = widget._persistentTabController.index != 0;
+        final db = DBService();
+        db.deleteQRUnmarkedCodes();
+      }
+      ScaffoldMessenger.maybeOf(context)?.removeCurrentMaterialBanner();
+    }
   }
 }
