@@ -30,9 +30,8 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   String? error;
   bool loading = false;
   DateTime _expirationDate = DateTime.now();
-  bool anyCodeUsedAtThisSession = false;
-  DateTime _lastExitWarnShownAt = DateTime.now();
-  int? _currentCode = 99999;
+  DateTime? _screenInactivatedAt;
+  bool _debugAnyCodeUsed = false;
   bool _screenChanged = false;
 
   @override
@@ -41,10 +40,12 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     WidgetsBinding.instance.addObserver(this);
     _getCodes();
     _checkForNotMarkedCode();
+    widget._persistentTabController.addListener(_onScreenChangeHandler);
   }
 
   @override
   void dispose() {
+    widget._persistentTabController.removeListener(_onScreenChangeHandler);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -53,35 +54,29 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     log('didChangeAppLifecycleState, $state');
 
-    if (state == AppLifecycleState.inactive) {
-      if (anyCodeUsedAtThisSession && !_screenChanged && _currentCode != null) {
-        log('saving code to db: $_currentCode, ');
+    if (state == AppLifecycleState.inactive &&
+        _selectedCodeIdx != -1 &&
+        !_debugAnyCodeUsed) {
+      _screenInactivatedAt = DateTime.now();
+      final currentCode = _codes[_selectedCodeIdx];
+
+      if (!_screenChanged &&
+          currentCode.usedAt == null &&
+          (currentCode.expiresAt == null ||
+              currentCode.expiresAt!.isAfter(DateTime.now()))) {
+        final db = DBService();
+        db.createUnmarkedCodeWarn(currentCode);
       }
     } else if (state == AppLifecycleState.resumed) {
-      log('checking if any code was cached...: $_currentCode, ');
-      //
+      _checkForNotMarkedCode();
     }
 
     super.didChangeAppLifecycleState(state);
   }
 
   @override
-  Future<bool> didPushRouteInformation(RouteInformation routeInformation) {
-    log('didPushRouteInformation ${routeInformation.location}');
-
-    return super.didPushRouteInformation(routeInformation);
-  }
-
-  @override
-  Future<bool> didPopRoute() {
-    log('did pop route');
-    return super.didPopRoute();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
-    final args = ModalRoute.of(context)?.settings.arguments as QRCode?;
 
     final QRCode? code =
         _selectedCodeIdx == -1 ? null : _codes[_selectedCodeIdx];
@@ -130,10 +125,11 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                         ),
                         label: const Text('Add Some Codes'),
                         style: TextButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            textStyle: const TextStyle(
-                              fontSize: 20,
-                            )),
+                          foregroundColor: Colors.blue,
+                          textStyle: const TextStyle(
+                            fontSize: 20,
+                          ),
+                        ),
                       ),
                     )
                   ],
@@ -168,7 +164,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                       ),
                     ),
                     Text(
-                      'This is a random not used code for the selected month.\nWhen scanned use the Done button to mark it as used. The app will then close.',
+                      'This is a not used code for the selected month.\nWhen scanned use the Done button to mark it as used. The app will then close.',
                       textScaleFactor: 0.9,
                       style: TextStyle(
                           color: (code.usedAt != null ? Colors.grey : null)),
@@ -183,7 +179,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                         label:
                             Text(code.usedAt != null ? 'Already Used' : 'Done'),
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.lightGreen.shade700,
+                          backgroundColor: Colors.lightGreen.shade700,
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           textStyle: const TextStyle(
                             fontSize: 30,
@@ -289,6 +285,17 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   }
 
   void _checkForNotMarkedCode() async {
+    if (_screenInactivatedAt != null) {
+      final inactiveTime = DateTime.now().difference(_screenInactivatedAt!);
+
+      const ignoredInactiveDuration = Duration(seconds: kReleaseMode ? 60 : 3);
+      if (inactiveTime < ignoredInactiveDuration) {
+        debugPrint(
+            'checking for "unmarked" codes skipped due to screen inactive time less then $ignoredInactiveDuration s ($inactiveTime).');
+        return;
+      }
+    }
+
     final db = DBService();
 
     final QrCodeUnmarked? possibleUnmarkedQRCode =
@@ -300,16 +307,47 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
 
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
+        padding: const EdgeInsetsDirectional.only(
+          start: 8.0,
+          top: 8.0,
+          end: 8.0,
+          bottom: 0.0,
+        ),
+        backgroundColor: Colors.amber.shade300,
         content: Text(
-            'Didn\'t you forget to use "Done" option last time?\nThe code (${possibleUnmarkedQRCode.codeValue}) was seen at ${possibleUnmarkedQRCode.createdAt.format()}.'),
+          'Possibly unchecked code.\nLast time ${possibleUnmarkedQRCode.createdAt.format()} you saw code ${possibleUnmarkedQRCode.codeValue} but did not "Done" it.',
+          textScaleFactor: 0.8,
+        ),
+        forceActionsBelow: true,
         actions: [
-          TextButton(
-            onPressed: () {
-              ScaffoldMessenger.maybeOf(context)?.hideCurrentMaterialBanner();
-              db.deleteQRUnmarkedCodes();
-            },
-            child: const Text("Dismiss"),
-          )
+          Wrap(
+            children: [
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+                  final db = DBService();
+                  db.deleteQRUnmarkedCodes();
+                },
+                style:
+                    TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                child: const Text(
+                  'Nah, I wasn\'t using any codes',
+                  textScaleFactor: 0.9,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+                },
+                style:
+                    TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                child: const Text(
+                  'Yes, mark the code as used',
+                  textScaleFactor: 0.9,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -345,7 +383,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     if (kReleaseMode) {
       exit(0);
     }
-
+    _debugAnyCodeUsed = true;
     final idx = _codes.indexWhere((c) => c.id == id);
 
     if (idx == -1) {
@@ -453,5 +491,16 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         ));
       },
     );
+  }
+
+  void _onScreenChangeHandler() {
+    log('screen changed');
+    _screenChanged =
+        _screenChanged || widget._persistentTabController.index != 0;
+    widget._persistentTabController.removeListener(_onScreenChangeHandler);
+    ScaffoldMessenger.maybeOf(context)?.removeCurrentMaterialBanner();
+
+    final db = DBService();
+    db.deleteQRUnmarkedCodes();
   }
 }

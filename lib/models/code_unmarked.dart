@@ -35,10 +35,8 @@ class QrCodeUnmarked {
   Map<String, Object?> toMap() {
     final Map<String, Object?> data = {
       QRCodeUnmarkedNS.cCodeId: codeId,
-      QRCodeUnmarkedNS.fcCodeValue: codeValue,
-      // QrCodeNotMarkedNS.cCreatedAt: createdAt.millisecondsSinceEpoch as num,
       QRCodeUnmarkedNS.cCreatedAt: createdAt.millisecondsSinceEpoch,
-      QRCodeUnmarkedNS.fcExpiresAt: expiresAt?.millisecondsSinceEpoch as num?,
+      QRCodeUnmarkedNS.fcExpiresAt: expiresAt?.millisecondsSinceEpoch,
     };
 
     if (id != 0) {

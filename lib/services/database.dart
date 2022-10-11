@@ -9,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 class DBService {
   static late final DBService _instance = DBService._internal();
   late final Database _db;
+  static const _dbVersion = 2;
 
   DBService._internal();
 
@@ -25,7 +26,7 @@ class DBService {
     // await _deleteDatabase();
     _instance._db = await openDatabase(
       await _dbPath(),
-      version: 1,
+      version: _dbVersion,
       onCreate: (db, version) async {
         const createSql = '''CREATE TABLE
           ${QRCodeNS.table} (
@@ -200,18 +201,23 @@ class DBService {
   }
 
   /// only one records should exists, prune table before creating new one.
-  Future<int> createUnmarkedCodeWarn(QRCode code) {
+  /// It's guaranteed that this function will not throw.
+  Future<void> createUnmarkedCodeWarn(QRCode code) async {
     final QrCodeUnmarked unmarkedCode = QrCodeUnmarked.fromCode(code);
     final data = unmarkedCode.toMap();
 
-    return _db.transaction<int>(
-      (trx) async {
-        await trx.rawDelete('DELETE FROM ${QRCodeUnmarkedNS.table}');
-        final id = await trx.insert(QRCodeUnmarkedNS.table, data);
+    try {
+      await _db.transaction<int>(
+        (trx) async {
+          await trx.rawDelete('DELETE FROM ${QRCodeUnmarkedNS.table}');
+          final id = await trx.insert(QRCodeUnmarkedNS.table, data);
 
-        return id;
-      },
-    );
+          return id;
+        },
+      );
+    } catch (err) {
+      debugPrint('createUnmarkedCodeWarn: err: $err');
+    }
   }
 
   /// it's expected that at most one record will be present in QrCodeUnmarkedNS table
@@ -221,7 +227,8 @@ class DBService {
   Future<QrCodeUnmarked?> getPossibleUnmarkedQRCode() async {
     try {
       final data = await _db.query(
-        '${QRCodeUnmarkedNS.table} umc join ${QRCodeNS.table} c on umc.${QRCodeUnmarkedNS.cCodeId} = c.${QRCodeNS.cId}',
+        '${QRCodeUnmarkedNS.table} umc '
+        'join ${QRCodeNS.table} c on umc.${QRCodeUnmarkedNS.cCodeId} = c.${QRCodeNS.cId}',
         columns: [
           'umc.${QRCodeUnmarkedNS.cId}',
           'umc.${QRCodeUnmarkedNS.cCodeId}',
@@ -230,6 +237,7 @@ class DBService {
           'umc.${QRCodeUnmarkedNS.fcExpiresAt}',
         ],
         orderBy: 'umc.${QRCodeUnmarkedNS.cCreatedAt} desc',
+        where: 'c.${QRCodeNS.cUsedAt} is null',
         limit: 1,
       );
 
@@ -248,15 +256,17 @@ class DBService {
 
   /// the expected behaviour is to always keep at max 1 code,
   /// so when we want to delete a record it seems ok to not specify "where".
+  /// It's guaranteed that this function will not throw.
   Future<void> deleteQRUnmarkedCodes() async {
-    final deleteCnt = await _db.rawDelete(
-      'DELETE FROM ${QRCodeUnmarkedNS.table}',
-    );
+    try {
+      final deleteCnt = await _db.rawDelete(
+        'DELETE FROM ${QRCodeUnmarkedNS.table}',
+      );
 
-    assert(deleteCnt == 0 || deleteCnt == 1,
-        '${QRCodeUnmarkedNS.table}: at most 1 record should exists at the given time');
-
-    debugPrint('deleting ${QRCodeUnmarkedNS.table}, count: $deleteCnt');
+      debugPrint('deleted from ${QRCodeUnmarkedNS.table}, count: $deleteCnt');
+    } catch (err) {
+      debugPrint('deleteQRUnmarkedCodes: err: $err');
+    }
   }
 
   static Future<void> _unsafe_deleteDatabase() async {
