@@ -5,21 +5,66 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "qrcode_keeper",
-			"request": "launch",
-			"type": "dart"
-		},
-		{
-			"name": "qrcode_keeper (profile mode)",
+			"name": "dev qrcode_keeper",
 			"request": "launch",
 			"type": "dart",
+			"program": "lib/main_dev.dart",
+			"args": [
+				"--flavor",
+				"development",
+				"--target",
+				"lib/main_dev.dart"
+			]
+		},
+		{
+			"name": "stag qrcode_keeper",
+			"request": "launch",
+			"type": "dart",
+			"program": "lib/main_stag.dart",
+			"args": [
+				"--flavor",
+				"staging",
+				"--target",
+				"lib/main_stag.dart"
+			]
+		},
+		{
+			"name": "prod qrcode_keeper",
+			"request": "launch",
+			"type": "dart",
+			"program": "lib/main_prod.dart",
+			"args": [
+				"--flavor",
+				"production",
+				"--target",
+				"lib/main_prod.dart"
+			]
+		},
+		{
+			"name": "dev qrcode_keeper (profile mode)",
+			"request": "launch",
+			"type": "dart",
+			"program": "lib/main_dev.dart",
+			"args": [
+				"--flavor",
+				"development",
+				"--target",
+				"lib/main_dev.dart"
+			],
 			"flutterMode": "profile"
 		},
 		{
-			"name": "qrcode_keeper (release mode)",
+			"name": "dev qrcode_keeper (release mode)",
 			"request": "launch",
 			"type": "dart",
+			"program": "lib/main_dev.dart",
+			"args": [
+				"--flavor",
+				"development",
+				"--target",
+				"lib/main_dev.dart"
+			],
 			"flutterMode": "release"
-		}
+		},
 	]
 }

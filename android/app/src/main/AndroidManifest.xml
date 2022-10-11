@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="kt.qrcodekeeper.qrcode_keeper">
+    package="kt.qrcodekeeper">
    <application
-        android:label="qrcode_keeper"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
