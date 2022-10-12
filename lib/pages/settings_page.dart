@@ -12,6 +12,22 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final _notificationsInfoTextController = TextEditingController();
+  bool? _perm = null;
+
+  @override
+  void initState() {
+    super.initState();
+    final ns = LocalNotificationsService();
+
+    ns.requestPermissions().then((v) {
+      log('perm: $v');
+      setState(() {
+        _perm = v;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,6 +39,12 @@ class _SettingsPageState extends State<SettingsPage> {
             Text(
               'Notifications',
               style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            CheckboxListTile(
+              tristate: true,
+              value: _perm,
+              onChanged: null,
+              title: const Text('Permissions:'),
             ),
             TextButton.icon(
               onPressed: () {
@@ -59,7 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 log('🔔$payload');
 
                 final ns = LocalNotificationsService();
-                ns.showScheduled(
+                ns.showTZScheduled(
                   id: LocalNotificationsService.kDailyQrReminderId,
                   notificationTime: time,
                   title: 'Qr Keeper Remainder',
@@ -74,10 +96,18 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton.icon(
               onPressed: () {
                 final ns = LocalNotificationsService();
-                ns.seePendingNotificationRequest();
+                ns.getPendingNotificationRequestText().then(
+                      (value) => _notificationsInfoTextController.text = value,
+                    );
               },
               icon: const Icon(Icons.notifications_outlined),
               label: const Text('See Scheduled Notifications!'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _notificationsInfoTextController,
+              minLines: 4,
+              maxLines: 10,
             ),
             const SizedBox(height: 16),
             TextButton.icon(
