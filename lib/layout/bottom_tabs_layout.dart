@@ -3,6 +3,7 @@ import "package:persistent_bottom_nav_bar/persistent_tab_view.dart";
 import 'package:qrcode_keeper/pages/qrcode_add_page.dart';
 import 'package:qrcode_keeper/pages/qrcode_display_page.dart';
 import 'package:qrcode_keeper/pages/qrcode_lookup_page.dart';
+import 'package:qrcode_keeper/pages/settings_page.dart';
 
 class BottomTabsLayout extends StatefulWidget {
   const BottomTabsLayout({super.key});
@@ -61,6 +62,7 @@ class _BottomTabsLayoutState extends State<BottomTabsLayout> {
       QRCodeDisplayPage(tabBarController: _controller),
       QRLookupPage(tabBarController: _controller),
       QRCodeAddPage(tabBarController: _controller),
+      const SettingsPage(),
     ];
   }
 
@@ -89,6 +91,12 @@ class _BottomTabsLayoutState extends State<BottomTabsLayout> {
         icon: const Icon(Icons.add),
         title: "Add",
         activeColorPrimary: Colors.blueAccent,
+        inactiveColorPrimary: Colors.grey,
+      ),
+      PersistentBottomNavBarItem(
+        icon: const Icon(Icons.settings_outlined),
+        title: "Settings",
+        activeColorPrimary: Colors.yellow.shade800,
         inactiveColorPrimary: Colors.grey,
       ),
     ];
