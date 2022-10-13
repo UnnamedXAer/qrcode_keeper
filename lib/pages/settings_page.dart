@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:qrcode_keeper/helpers/snackabar.dart';
+import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/services/local_notifications_service.dart';
 
 class SettingsPage extends StatefulWidget {
