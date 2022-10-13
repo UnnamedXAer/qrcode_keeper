@@ -2,6 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:qrcode_keeper/exceptions/app_exception.dart';
+import 'package:qrcode_keeper/helpers/date.dart';
 import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/services/local_notifications_service.dart';
 
@@ -16,6 +18,11 @@ class _SettingsPageState extends State<SettingsPage> {
   List<String>? _notificationsInfo;
   bool? _hasNotifPermissions;
   bool _initializingNotifications = false;
+  final _notificationDays = Map<int, bool>.fromIterable(
+    List.generate(DateTime.daysPerWeek, (index) => index + 1),
+    value: (_) => false,
+  );
+  TimeOfDay _notificationTime = const TimeOfDay(hour: 10, minute: 15);
 
   @override
   void initState() {
@@ -141,19 +148,43 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (notifTime == null) {
                         return;
                       }
-
-                      final ns = LocalNotificationsService();
-                      ns.showTZScheduledForDays(
-                        days: {},
-                        notificationTime: notifTime,
-                        title: 'Qr Keeper Remainder',
-                        body: 'Go fetch some pasza (daily)',
-                        // body: payload,
-                        payload: null,
-                      );
                     },
                     icon: const Icon(Icons.notifications_outlined),
                     label: const Text('Schedule Notification!'),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: 180,
+                    child: OutlinedButton.icon(
+                      onPressed: _openTimePickerHandler,
+                      icon: const Icon(Icons.watch_later_outlined),
+                      label: Text(_notificationTime.format(context)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    runSpacing: 16,
+                    children: [
+                      for (final day in _notificationDays.entries)
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(kWeekDays[day.key]!.substring(0, 3)),
+                            Transform.rotate(
+                              angle: -0.5,
+                              child: Switch(
+                                onChanged: (v) {
+                                  setState(() {
+                                    _notificationDays[day.key] = v;
+                                  });
+                                  _updateNotifications();
+                                },
+                                value: day.value,
+                              ),
+                            ),
+                          ],
+                        )
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextButton.icon(
@@ -188,5 +219,64 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
       ),
     );
+  }
+
+  void _openTimePickerHandler() async {
+    final nowTime = TimeOfDay.now();
+    final notifTime = await showTimePicker(
+      context: context,
+      initialTime:
+          kReleaseMode ? const TimeOfDay(hour: 10, minute: 0) : nowTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const Text('error'),
+        );
+      },
+    );
+    if (notifTime == null) {
+      return;
+    }
+    setState(() {
+      _notificationTime = notifTime;
+    });
+
+    _updateNotifications();
+  }
+
+  void _updateNotifications() async {
+    Set<int> days = {};
+    _notificationDays.forEach((key, value) {
+      if (value) {
+        days.add(key);
+      }
+    });
+
+    if (days.isEmpty) {
+      return;
+    }
+
+    final ns = LocalNotificationsService();
+    try {
+      ns.showTZScheduledForDays(
+        days: days,
+        notificationTime: _notificationTime,
+        title: 'Qr Keeper Remainder',
+        body: 'Go fetch some pasza (daily)',
+        // body: payload,
+        payload: null,
+      );
+    } on AppException catch (ex) {
+      SnackbarCustom.hideCurrent(context);
+      SnackbarCustom.show(context, mounted: mounted, message: ex.message);
+    } on Exception catch (ex) {
+      debugPrint('_updateNotifications: ex: $ex');
+      SnackbarCustom.hideCurrent(context);
+      SnackbarCustom.show(
+        context,
+        mounted: mounted,
+        title: SnackbarCustom.errorTitle,
+      );
+    }
   }
 }

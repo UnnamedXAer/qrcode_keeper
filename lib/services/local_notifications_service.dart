@@ -1,25 +1,26 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:qrcode_keeper/exceptions/app_exception.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:qrcode_keeper/extensions/date_time.dart';
 
-@pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse notificationResponse) {
-  log(
-    '''😐💤 notificationTapBackground:
-      now: ${DateTime.now()}
-      id: ${notificationResponse.id}, 
-      payload: ${notificationResponse.payload}, 
-      type: ${notificationResponse.notificationResponseType}
-    ''',
-  );
+// @pragma('vm:entry-point')
+// void notificationTapBackground(NotificationResponse notificationResponse) {
+//   log(
+//     '''😐💤 notificationTapBackground:
+//       now: ${DateTime.now()}
+//       id: ${notificationResponse.id},
+//       payload: ${notificationResponse.payload},
+//       type: ${notificationResponse.notificationResponseType}
+//     ''',
+//   );
 
-  return;
-}
+//   return;
+// }
 
 class LocalNotificationsService {
   static final LocalNotificationsService _instance =
@@ -46,18 +47,18 @@ class LocalNotificationsService {
 
     return _instance._localNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (notificationResponse) async {
-        log(
-          '''😐 onDidReceiveNotificationResponse: 
-            now: ${DateTime.now()}
-            id: ${notificationResponse.id}, 
-            payload: ${notificationResponse.payload}, 
-            type: ${notificationResponse.notificationResponseType}
-          ''',
-        );
-        return;
-      },
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+      // onDidReceiveNotificationResponse: (notificationResponse) async {
+      //   log(
+      //     '''😐 onDidReceiveNotificationResponse:
+      //       now: ${DateTime.now()}
+      //       id: ${notificationResponse.id},
+      //       payload: ${notificationResponse.payload},
+      //       type: ${notificationResponse.notificationResponseType}
+      //     ''',
+      //   );
+      //   return;
+      // },
+      // onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
   }
 
@@ -76,44 +77,41 @@ class LocalNotificationsService {
   }) async {
     await _localNotificationsPlugin.cancelAll();
 
-    // TODO: pass days by parameter
-    final Set<int> _days = {
-      DateTime.monday,
-      DateTime.tuesday,
-      DateTime.wednesday,
-      DateTime.thursday,
-      DateTime.friday,
-    };
+    try {
+      for (var day in days) {
+        final notificationDetails = _getWeekDayNotificationDetails();
+        final scheduledDate = _getInstanceOfDateTimeFromTimeOfDay(
+          day,
+          notificationTime,
+        );
 
-    if (_days.isEmpty) {
-      return;
-    }
+        final payload = jsonEncode({
+          'type': 'weekDayRemainder',
+          'weekDay': day,
+          'time': {
+            'hour': notificationTime.hour,
+            'minute': notificationTime.minute,
+          },
+        });
 
-    for (var day in _days) {
-      final notificationDetails = _getWeekDayNotificationDetails();
-      final scheduledDate = _getInstanceOfDateTimeFromTimeOfDay(
-        day,
-        notificationTime,
-      );
+        log('🔔 $payload');
 
-      final payload =
-          'Notif. scheduled at ${tz.TZDateTime.now(tz.local).format(withSeconds: true)} for 🔔 ${scheduledDate.format()} / $day + ${notificationTime.hour}:${notificationTime.minute}';
-
-      log(payload);
-
-      await _localNotificationsPlugin.zonedSchedule(
-        // day as Id ensures we have at most 1 scheduled notification per week day
-        day,
-        title,
-        body,
-        payload: payload,
-        scheduledDate,
-        notificationDetails,
-        androidAllowWhileIdle: true,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-      );
+        await _localNotificationsPlugin.zonedSchedule(
+          // day as Id ensures we have at most 1 scheduled notification per week day
+          day,
+          title,
+          body,
+          payload: payload,
+          scheduledDate,
+          notificationDetails,
+          androidAllowWhileIdle: true,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
+    } on Exception catch (ex) {
+      throw AppException('Failed to update notifications.', ex);
     }
   }
 
@@ -167,7 +165,7 @@ class LocalNotificationsService {
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'kt.qrcode_keeper.daily_remainder_use_qr_code',
-          'QR Keeper Daily Remainder: Go use QR code',
+          'QR Keeper Daily',
           channelDescription:
               'This is a daily remainder about using a QR code.',
           importance: Importance.max,
