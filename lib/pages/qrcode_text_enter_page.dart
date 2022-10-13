@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qrcode_keeper/helpers/snackabar.dart';
+import 'package:qrcode_keeper/helpers/snackbar.dart';
 
 class QRCodeTextEnterPage extends StatefulWidget {
   const QRCodeTextEnterPage({
