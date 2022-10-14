@@ -1,6 +1,3 @@
-import 'dart:developer';
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qrcode_keeper/exceptions/app_exception.dart';
@@ -30,8 +27,6 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-
-    log(Platform.operatingSystemVersion);
 
     _initServices().then((_) {
       return _setCurrentNotificationsState();
