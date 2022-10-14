@@ -44,6 +44,16 @@ Write-Host "Target main file: $mainFileDir"
 Write-Host "Getting packages..."
 flutter pub get
 
+if ($buildAssets) {
+	Write-Host "Generating splash screen..."
+	flutter pub run flutter_native_splash:create --flavor $flavor
+	Write-Host "Generating launcher icons for $flavor..."
+	flutter pub run flutter_launcher_icons:main -f "flutter_launcher_icons-$flavor.yaml"
+}
+else {
+	Write-Host "Rebuilding assets skipped, pass -buildAssets to trigger rebuilding"
+}
+
 flutter build apk --split-per-abi "--$buildType" --flavor $flavor -t "lib/$mainFileDir"
 
 $buildApks = "build/app/outputs/apk/$flavor/$buildType/app-$flavor-armeabi-v7a-$buildType.apk"
