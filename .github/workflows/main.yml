@@ -22,6 +22,8 @@ jobs:
           flutter-version: '3.3.3'
       - run: flutter pub get
       # - run: flutter test
+      - run: flutter pub run flutter_native_splash:create --flavor staging
+      - run: flutter pub run flutter_launcher_icons:main -f "flutter_launcher_icons-staging.yaml"
       - run: flutter build apk --split-per-abi "--release" --flavor staging -t "lib/main_stag.dart"
       - name: Push to Releases
         uses: ncipollo/release-action@v1

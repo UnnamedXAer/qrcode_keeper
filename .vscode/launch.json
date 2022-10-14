@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "dev qrcode_keeper",
+			"name": "dev(debug) qrcode_keeper",
 			"request": "launch",
 			"type": "dart",
 			"program": "lib/main_dev.dart",
@@ -17,7 +17,7 @@
 			]
 		},
 		{
-			"name": "stag qrcode_keeper",
+			"name": "stag(debug) qrcode_keeper",
 			"request": "launch",
 			"type": "dart",
 			"program": "lib/main_stag.dart",
@@ -29,7 +29,7 @@
 			]
 		},
 		{
-			"name": "stag/release qrcode_keeper",
+			"name": "stag(release) qrcode_keeper",
 			"request": "launch",
 			"type": "dart",
 			"program": "lib/main_stag.dart",
@@ -42,7 +42,20 @@
 			"flutterMode": "release"
 		},
 		{
-			"name": "prod qrcode_keeper",
+			"name": "prod(debug) qrcode_keeper",
+			"request": "launch",
+			"type": "dart",
+			"program": "lib/main_prod.dart",
+			"args": [
+				"--flavor",
+				"production",
+				"--target",
+				"lib/main_prod.dart"
+			],
+			"flutterMode": "debug"
+		},
+		{
+			"name": "prod(release) qrcode_keeper",
 			"request": "launch",
 			"type": "dart",
 			"program": "lib/main_prod.dart",

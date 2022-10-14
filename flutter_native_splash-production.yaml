@@ -1,0 +1,7 @@
+flutter_native_splash:
+  image: "assets/logo/production-logo.png"
+  color: "#ffffff"
+  android: true
+  ios: false
+
+# flutter pub run flutter_native_splash:create --flavor production
