@@ -1,26 +1,15 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:qrcode_keeper/exceptions/app_exception.dart';
+import 'package:qrcode_keeper/models/notification_info.dart';
+// ignore: depend_on_referenced_packages
 import 'package:timezone/data/latest_all.dart' as tz;
+// ignore: depend_on_referenced_packages
 import 'package:timezone/timezone.dart' as tz;
 
-// @pragma('vm:entry-point')
-// void notificationTapBackground(NotificationResponse notificationResponse) {
-//   log(
-//     '''😐💤 notificationTapBackground:
-//       now: ${DateTime.now()}
-//       id: ${notificationResponse.id},
-//       payload: ${notificationResponse.payload},
-//       type: ${notificationResponse.notificationResponseType}
-//     ''',
-//   );
-
-//   return;
-// }
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) {}
 
 class LocalNotificationsService {
   static final LocalNotificationsService _instance =
@@ -47,18 +36,8 @@ class LocalNotificationsService {
 
     return _instance._localNotificationsPlugin.initialize(
       initializationSettings,
-      // onDidReceiveNotificationResponse: (notificationResponse) async {
-      //   log(
-      //     '''😐 onDidReceiveNotificationResponse:
-      //       now: ${DateTime.now()}
-      //       id: ${notificationResponse.id},
-      //       payload: ${notificationResponse.payload},
-      //       type: ${notificationResponse.notificationResponseType}
-      //     ''',
-      //   );
-      //   return;
-      // },
-      // onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+      onDidReceiveNotificationResponse: (notificationResponse) {},
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
   }
 
@@ -68,12 +47,11 @@ class LocalNotificationsService {
     tz.setLocalLocation(tz.getLocation(timeZone));
   }
 
-  Future<void> showTZScheduledForDays({
+  Future<void> scheduleWeekDaysNotifications({
     required Set<int> days,
     required TimeOfDay notificationTime,
     String? title,
     String? body,
-    String? payload,
   }) async {
     await _localNotificationsPlugin.cancelAll();
 
@@ -85,16 +63,10 @@ class LocalNotificationsService {
           notificationTime,
         );
 
-        final payload = jsonEncode({
-          'type': 'weekDayRemainder',
-          'weekDay': day,
-          'time': {
-            'hour': notificationTime.hour,
-            'minute': notificationTime.minute,
-          },
-        });
-
-        log('🔔 $payload');
+        final payload = WeekDayNotificationInfo(
+          time: notificationTime,
+          weekDay: day,
+        ).toJson();
 
         await _localNotificationsPlugin.zonedSchedule(
           // day as Id ensures we have at most 1 scheduled notification per week day
@@ -113,9 +85,36 @@ class LocalNotificationsService {
     } on Exception catch (ex) {
       throw AppException('Failed to update notifications.', ex);
     }
+
+    logPendingNotificationRequests();
   }
 
-  Future<List<String>> getPendingNotificationRequestText() async {
+  Future<List<NotificationInfo>> getPendingNotificationRequests() async {
+    // TODO: handle exceptions especially about permissions
+    final notifs =
+        await _localNotificationsPlugin.pendingNotificationRequests();
+    List<NotificationInfo> infos = [];
+    for (var n in notifs) {
+      if (n.payload == null) {
+        // Omit notifications that have no payload, since we cannot do anything with them.
+        // We could cancel them but I guess it won't hurt to much if some
+        // unexpected notification pops up.
+        continue;
+      }
+      infos.add(NotificationInfo.fromJson(n.payload!));
+    }
+
+    return infos;
+  }
+
+  Future<List<WeekDayNotificationInfo>>
+      getPendingWeekDayNotificationRequests() {
+    return getPendingNotificationRequests().then(
+      (value) => value.whereType<WeekDayNotificationInfo>().toList(),
+    );
+  }
+
+  Future<void> logPendingNotificationRequests() async {
     final notifs =
         await _localNotificationsPlugin.pendingNotificationRequests();
     List<String> s = [];
@@ -123,13 +122,14 @@ class LocalNotificationsService {
       s.add('${n.id} / ${n.payload}');
     }
 
-    return s;
+    debugPrint(s.join('\n'));
   }
 
   Future<void> cancelAll() {
     return _localNotificationsPlugin.cancelAll();
   }
 
+  /// Requests permissions on Android 13. On older versions, it is a no-op.
   Future<bool?> requestPermissions() async {
     final imp = _localNotificationsPlugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();

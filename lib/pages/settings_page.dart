@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:qrcode_keeper/exceptions/app_exception.dart';
 import 'package:qrcode_keeper/helpers/date.dart';
 import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/services/local_notifications_service.dart';
+import 'package:qrcode_keeper/widgets/error_text.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -15,9 +17,10 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  List<String>? _notificationsInfo;
   bool? _hasNotifPermissions;
   bool _initializingNotifications = false;
+  String? _notifError;
+  bool isAndroid13OrAbove = false;
   final _notificationDays = Map<int, bool>.fromIterable(
     List.generate(DateTime.daysPerWeek, (index) => index + 1),
     value: (_) => false,
@@ -27,13 +30,18 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-    _initServices();
+
+    log(Platform.operatingSystemVersion);
+
+    _initServices().then((_) {
+      return _setCurrentNotificationsState();
+    });
   }
 
-  void _initServices() async {
+  Future<void> _initServices() async {
     final notifServiceInitialized = await _initNotifService();
     if (notifServiceInitialized) {
-      _requestNotifPermissions();
+      return _requestNotifPermissions();
     }
   }
 
@@ -64,32 +72,79 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  void _requestNotifPermissions() async {
+  Future<void> _requestNotifPermissions() async {
     try {
       final ns = LocalNotificationsService();
       final hasPermissions = await ns.requestPermissions();
-      log('perm: $hasPermissions');
+
       setState(() {
+        if (hasPermissions == false) {
+          _notifError =
+              'You must grant notifications permissions otherwise no notification will show up (see Android Settings / Applications).';
+        } else if (hasPermissions == null) {
+          throw AppException(
+            'Verifying notifications permissions failed.',
+            'requestPermissions has returned null',
+          );
+        } else {
+          _notifError = null;
+        }
         _hasNotifPermissions = hasPermissions;
       });
-    } catch (err) {
+    } on Exception catch (ex) {
+      debugPrint('_requestNotifPermissions: ex: $ex');
+      setState(() {
+        _hasNotifPermissions = null;
+        _notifError =
+            'Couldn\'t verify notifications permissions, ensure the app has them granted otherwise no notification will show up (see Android Settings / Applications)';
+      });
+      SnackbarCustom.hideCurrent(context, mounted: mounted);
       SnackbarCustom.show(
         context,
         mounted: mounted,
         title: SnackbarCustom.errorTitle,
-        message: 'Failed to request notification permissions.',
+        message: 'Failed to get notification permissions.',
         level: MessageLevel.error,
       );
     }
   }
 
+  Future<void> _setCurrentNotificationsState() async {
+    final ns = LocalNotificationsService();
+    try {
+      final weekDaysNotifications =
+          await ns.getPendingWeekDayNotificationRequests();
+      if (weekDaysNotifications.isEmpty) {
+        return;
+      }
+
+      _notificationTime = weekDaysNotifications[0].time;
+
+      _notificationDays.forEach((key, value) {
+        _notificationDays[key] = false;
+      });
+
+      for (var notif in weekDaysNotifications) {
+        _notificationDays[notif.weekDay] = true;
+      }
+
+      setState(() {});
+    } on Exception catch (ex) {
+      debugPrint('_setCurrentNotificationsState: ex: $ex');
+      setState(() {
+        _notifError = 'Couldn\'t get notifications state.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    log('🔔 notif perms: $_hasNotifPermissions');
-
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: const Text('Settings'),
+      ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: _initializingNotifications
             ? const Center(
                 child: CircularProgressIndicator.adaptive(),
@@ -102,7 +157,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   ListTile(
-                    title: const Text('Permissions:'),
+                    title: const Text('Notifications Permissions:'),
                     leading: const Icon(Icons.notifications_outlined),
                     enableFeedback: false,
                     trailing: Checkbox(
@@ -118,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       fillColor: MaterialStateProperty.resolveWith<Color>(
                         (states) {
                           if (_hasNotifPermissions == null) {
-                            return Colors.green.withOpacity(.32);
+                            return Colors.blue;
                           } else if (!_hasNotifPermissions!) {
                             return Colors.orange.shade800;
                           }
@@ -128,30 +183,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () async {
-                      final nowTime = TimeOfDay.now();
-                      final notifTime = await showTimePicker(
-                        context: context,
-                        initialTime: kReleaseMode
-                            ? const TimeOfDay(hour: 10, minute: 0)
-                            : nowTime,
-                        builder: (context, child) {
-                          return MediaQuery(
-                            data: MediaQuery.of(context)
-                                .copyWith(alwaysUse24HourFormat: true),
-                            child: child ?? const Text('error'),
-                          );
-                        },
-                      );
-                      if (notifTime == null) {
-                        return;
-                      }
-                    },
-                    icon: const Icon(Icons.notifications_outlined),
-                    label: const Text('Schedule Notification!'),
-                  ),
+                  if (_notifError != null) ErrorText(_notifError!),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: 180,
@@ -164,6 +196,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 16),
                   Wrap(
                     runSpacing: 16,
+                    alignment: WrapAlignment.end,
                     children: [
                       for (final day in _notificationDays.entries)
                         Column(
@@ -172,14 +205,19 @@ class _SettingsPageState extends State<SettingsPage> {
                             Text(kWeekDays[day.key]!.substring(0, 3)),
                             Transform.rotate(
                               angle: -0.5,
-                              child: Switch(
-                                onChanged: (v) {
-                                  setState(() {
-                                    _notificationDays[day.key] = v;
-                                  });
-                                  _updateNotifications();
-                                },
-                                value: day.value,
+                              child: SizedBox(
+                                width: 50,
+                                child: Switch(
+                                  onChanged: _initializingNotifications
+                                      ? null
+                                      : (v) {
+                                          setState(() {
+                                            _notificationDays[day.key] = v;
+                                          });
+                                          _updateNotifications();
+                                        },
+                                  value: day.value,
+                                ),
                               ),
                             ),
                           ],
@@ -187,34 +225,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () {
-                      final ns = LocalNotificationsService();
-                      ns.getPendingNotificationRequestText().then((value) {
-                        setState(() => _notificationsInfo = value);
-                      });
-                    },
-                    icon: const Icon(Icons.circle_notifications_outlined),
-                    label: const Text('See Scheduled Notifications!'),
-                  ),
-                  const SizedBox(height: 16),
-                  ..._notificationsInfo != null
-                      ? _notificationsInfo!.map((e) => Text(e)).toList()
-                      : [const Text('-')],
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () {
-                      final ns = LocalNotificationsService();
-                      ns
-                          .cancelAll()
-                          .then((_) => ns.getPendingNotificationRequestText())
-                          .then((value) {
-                        setState(() => _notificationsInfo = value);
-                      });
-                    },
-                    icon: const Icon(Icons.notifications_off_outlined),
-                    label: const Text('Cancel All Notifications!'),
-                  ),
                 ],
               ),
       ),
@@ -252,19 +262,13 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     });
 
-    if (days.isEmpty) {
-      return;
-    }
-
     final ns = LocalNotificationsService();
     try {
-      ns.showTZScheduledForDays(
+      ns.scheduleWeekDaysNotifications(
         days: days,
         notificationTime: _notificationTime,
         title: 'Qr Keeper Remainder',
         body: 'Go fetch some pasza (daily)',
-        // body: payload,
-        payload: null,
       );
     } on AppException catch (ex) {
       SnackbarCustom.hideCurrent(context);
