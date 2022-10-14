@@ -7,20 +7,15 @@ class NativeCodeService {
   static const platform = MethodChannel('kt.qrcodekeeper');
 
   /// Returns os version.
-  /// 
+  ///
   /// It will return `null` if could not determine or en PlatformException occurs.
   static Future<double?> getOsVersion() async {
     try {
       final res = await platform.invokeMethod('getOsVersion');
-      if (res is String) {
-        double? version = double.tryParse(res);
-        return version;
-      }
+      return res;
     } on PlatformException catch (ex) {
       debugPrint('getOsVersion: ex: $ex');
       return null;
     }
-
-    return null;
   }
 }
