@@ -26,7 +26,6 @@ jobs:
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/apk/staging/*"
+          artifacts: "build/app/outputs/apk/staging/release/*"
           tag: v1.0.${{ github.run_number }}
           token: ${{ secrets.TOKEN }}
-          
