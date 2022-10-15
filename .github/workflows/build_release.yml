@@ -1,0 +1,50 @@
+name: "Reusable workflow: Build & Release"
+
+on:
+  workflow_call:
+    inputs:
+      flavor:
+        required: true
+        type: string
+        description: "One of: 'production' or 'staging'"
+
+      tag-suffix:
+        required: false
+        type: string
+        default: ""
+        description: "string appended to the tag. Empty for production otherwise starts with dash, eg. -stag"
+
+
+    secrets:
+      token:
+        required: true
+
+jobs:
+  build:
+    name: "Build & Release: ${{ inputs.flavor }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v1
+
+      - name: Branch name
+        run: echo running on branch ${{ inputs.flavor }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '17.x'
+      - name: Setup Flutter, build assets and apk
+        shell: powershell
+        uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '3.3.3'
+        run: |
+          ./build -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
+
+      - name: Push to Releases
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/apk/${{ inputs.flavor }}/release/*"
+          tag: v1.0.${{ github.run_number }}${{ inputs.tag-suffix }}
+          token: ${{ secrets.token }}
