@@ -13,7 +13,7 @@ jobs:
     outputs:
       flavor_out: ${{ steps.set_variables_step.outputs.flavor_out }}
     steps:
-      - name: Print & set inputs passed to the call-build-workflow
+      - name: Print inputs passed to the call-build-workflow
         id: set_variables_step
         run: |
           echo "flavor: $GITHUB_REF_NAME"
@@ -23,7 +23,7 @@ jobs:
     name: "Calling Build & Release reusable workflow"
     uses: ./.github/workflows/build_release_reusable.yml
     with:
-      flavor: "$GITHUB_REF_NAME"
+      flavor: ${{ needs.set_variable.outputs.flavor_out }}
       tag-suffix: -stag
     secrets:
       token: ${{ secrets.TOKEN }}
