@@ -40,27 +40,10 @@ jobs:
         with:
           flutter-version: '3.3.3'
 
-      - name: PWD
-        shell: powershell
-        run: echo "PWD is ${PWD}"
-      - name: ls inside PDW
-        shell: powershell
-        run: ls
-
-    
-      - name: check GITHUB_REF_NAME
-        shell: powershell
-        run: |
-          echo GITHUB_REF_NAME is - $GITHUB_REF_NAME
-          echo GITHUB_REF_NAME is - ${GITHUB_REF_NAME}
-          echo GITHUB_REF_NAME is - "$GITHUB_REF_NAME"
-          echo GITHUB_REF_NAME is - "${GITHUB_REF_NAME}"
-
-
       - name: Build assets & apk
-        shell: powershell
+        shell: pwsh
         run: |
-          ${PWD}/build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
+          "${PWD}/build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release"
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
