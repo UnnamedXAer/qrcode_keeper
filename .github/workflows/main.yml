@@ -7,7 +7,8 @@ on:
       - production
 
 jobs:
-  call-workflow-passing-data:
+  call-build-workflow:
+    name: "Calling Build & Release reusable workflow"
     uses: ./.github/workflows/build_release.yml
     with:
       flavor: $GITHUB_REF_NAME
