@@ -7,6 +7,18 @@ on:
       - production
 
 jobs:
+  set_variable:
+    name: Workaround for passing env vars as inputs
+    runs-on: ubuntu-latest
+    outputs:
+      flavor_out: ${{ steps.set_variables_step.outputs.flavor_out }}
+    steps:
+      - name: Print & set inputs passed to the call-build-workflow
+        id: set_variables_step
+        run: |
+          echo "flavor: $GITHUB_REF_NAME"
+          echo "::set-output name=flavor_out::$GITHUB_REF_NAME"
+
   call-build-workflow:
     name: "Calling Build & Release reusable workflow"
     uses: ./.github/workflows/build_release_reusable.yml
