@@ -13,7 +13,7 @@ on:
 
 jobs:
   call-workflow-passing-data:
-    uses: ./.github/workflows/build_release.yml@master
+    uses: ./.github/workflows/build_release.yml
     with:
       flavor: $GITHUB_REF_NAME
       tag-suffix: -stag
