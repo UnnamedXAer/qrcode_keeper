@@ -20,6 +20,8 @@ jobs:
           echo "::set-output name=flavor_out::$GITHUB_REF_NAME"
 
   call-build-workflow:
+    needs: 
+      - set_variable
     name: "Calling Build & Release reusable workflow"
     uses: ./.github/workflows/build_release_reusable.yml
     with:
