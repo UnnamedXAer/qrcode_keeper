@@ -1,33 +1,82 @@
+name: Build & Release
+
 on: 
   pull_request:
     branches:
       - staging
+      - production
 
-  push:
-    branches:
-      - staging
+  # push:
+  #   branches:
+  #     - staging
 
-name: Build & Release
 jobs:
   build:
-    name: Build & Release
+    name: "Build & Release: ${GITHUB_REF##*/}"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-java@v1
+      - name: Git Checkout
+        uses: actions/checkout@v1
+
+      - name: Branch name
+        run: echo running on branch ${GITHUB_REF##*/}
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
         with:
           java-version: '12.x'
-      - uses: subosito/flutter-action@v1
+      - name: Setup Flutter, build assets and apk
+        uses: subosito/flutter-action@v1
         with:
           flutter-version: '3.3.3'
       - run: flutter pub get
       # - run: flutter test
-      - run: flutter pub run flutter_native_splash:create --flavor staging
-      - run: flutter pub run flutter_launcher_icons:main -f "flutter_launcher_icons-staging.yaml"
-      - run: flutter build apk --split-per-abi "--release" --flavor staging -t "lib/main_stag.dart"
+
+      - run: flutter pub run flutter_native_splash:create --flavor ${GITHUB_REF##*/}
+      - run: flutter pub run flutter_launcher_icons:main -f "flutter_launcher_icons-${GITHUB_REF##*/}.yaml"
+      - run: flutter build apk --split-per-abi "--release" --flavor ${GITHUB_REF##*/} -t "lib/main_stag.dart"
+      
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/apk/staging/release/*"
+          artifacts: "build/app/outputs/apk/${GITHUB_REF##*/}/release/*"
           tag: v1.0.${{ github.run_number }}
           token: ${{ secrets.TOKEN }}
+
+
+
+#########################################################
+# name: Build & Release
+
+# on: 
+#   pull_request:
+#     branches:
+#       - staging
+
+#   push:
+#     branches:
+#       - staging
+
+# jobs:
+#   build:
+#     name: Build & Release
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v1
+#       - uses: actions/setup-java@v1
+#         with:
+#           java-version: '12.x'
+#       - uses: subosito/flutter-action@v1
+#         with:
+#           flutter-version: '3.3.3'
+#       - run: flutter pub get
+#       # - run: flutter test
+#       - run: flutter pub run flutter_native_splash:create --flavor staging
+#       - run: flutter pub run flutter_launcher_icons:main -f "flutter_launcher_icons-staging.yaml"
+#       - run: flutter build apk --split-per-abi "--release" --flavor staging -t "lib/main_stag.dart"
+#       - name: Push to Releases
+#         uses: ncipollo/release-action@v1
+#         with:
+#           artifacts: "build/app/outputs/apk/staging/release/*"
+#           tag: v1.0.${{ github.run_number }}
+#           token: ${{ secrets.TOKEN }}
