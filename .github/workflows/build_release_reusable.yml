@@ -22,7 +22,7 @@ on:
 
 jobs:
   build:
-    if: inputs.flavor == "production" || inputs.flavor == "staging"
+    if: inputs.flavor == 'production' || inputs.flavor == 'staging'
     name: "Build & Release: ${{ inputs.flavor }}"
     runs-on: ubuntu-latest
     steps:
