@@ -34,14 +34,14 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: '17.x'
-      - name: Setup Flutter, build assets and apk
-        shell: powershell
+      - name: Setup Flutter
         uses: subosito/flutter-action@v1
         with:
           flutter-version: '3.3.3'
+      - name: Build assets & apk
+        shell: powershell
         run: |
           ./build -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
-
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
