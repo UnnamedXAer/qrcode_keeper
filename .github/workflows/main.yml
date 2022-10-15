@@ -1,12 +1,7 @@
 name: Build & Release
 
 on: 
-  pull_request:
-    branches:
-      - staging
-      - production
-
-  push:
+  push: # after successfully merged pull request the push is executed.
     branches:
       - staging
       - production
