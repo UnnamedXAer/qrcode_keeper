@@ -25,27 +25,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Git Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Branch name
-        run: echo running on branch ${{ inputs.flavor }}
+        run: echo "running on branch ${{ inputs.flavor }}"
 
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '17.x'
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v1
         with:
           flutter-version: '3.3.3'
 
-      - name: Action path
-        run: "echo Action path: ${{ github.action_path }}"
+      - name: PWD
+        shell: powershell
+        run: echo "PWD is ${PWD}"
+      - name: ls inside PDW
+        shell: powershell
+        run: ls
+
+    
+      - name: check GITHUB_REF_NAME
+        shell: powershell
+        run: |
+          echo GITHUB_REF_NAME is - $GITHUB_REF_NAME
+          echo GITHUB_REF_NAME is - ${GITHUB_REF_NAME}
+          echo GITHUB_REF_NAME is - "$GITHUB_REF_NAME"
+          echo GITHUB_REF_NAME is - "${GITHUB_REF_NAME}"
+
 
       - name: Build assets & apk
         shell: powershell
         run: |
-          ${{ github.action_path }}/build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
+          ${PWD}/build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
+
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:

@@ -11,7 +11,7 @@ jobs:
     name: "Calling Build & Release reusable workflow"
     uses: ./.github/workflows/build_release.yml
     with:
-      flavor: $GITHUB_REF_NAME
+      flavor: "$GITHUB_REF_NAME"
       tag-suffix: -stag
     secrets:
       token: ${{ secrets.TOKEN }}
