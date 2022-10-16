@@ -1,6 +1,8 @@
 name: "Reusable workflow: Build & Release"
 run-name: "Reusable workflow: Build & Release for: ${{ inputs.flavor }}"
 
+# https://github.com/daniil-shumko/flutter_github_actions_basics/blob/main/.github/workflows/flutter-ci-cd.yaml
+
 on:
   workflow_call:
     inputs:

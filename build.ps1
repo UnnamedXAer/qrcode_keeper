@@ -53,7 +53,7 @@ if ($buildAssets) {
 else {
 	Write-Host "Rebuilding assets skipped, pass -buildAssets to trigger rebuilding"
 }
-
+# flutter build appbundle "--release" --flavor staging -t "lib/main_stag.dart" 
 flutter build apk --split-per-abi "--$buildType" --flavor $flavor -t "lib/$mainFileDir"
 
 $buildApks = "build/app/outputs/apk/$flavor/$buildType/app-$flavor-armeabi-v7a-$buildType.apk"
