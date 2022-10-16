@@ -134,94 +134,116 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height - kBottomNavigationBarHeight - kTextTabBarHeight - 4*16 ;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        child: _initializingNotifications
-            ? const Center(
-                child: CircularProgressIndicator.adaptive(),
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Notifications',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  ListTile(
-                    title: const Text('Notifications Permissions:'),
-                    leading: const Icon(Icons.notifications_outlined),
-                    enableFeedback: false,
-                    trailing: Checkbox(
-                      tristate: true,
-                      value: (_hasNotifPermissions),
-                      onChanged: _hasNotifPermissions == true
-                          ? null
-                          : (value) {
-                              if (_hasNotifPermissions != true) {
-                                _requestNotifPermissions();
-                              }
-                            },
-                      fillColor: MaterialStateProperty.resolveWith<Color>(
-                        (states) {
-                          if (_hasNotifPermissions == null) {
-                            return Colors.blue;
-                          } else if (!_hasNotifPermissions!) {
-                            return Colors.orange.shade800;
-                          }
-
-                          return Colors.green;
-                        },
-                      ),
-                    ),
-                  ),
-                  if (_notifError != null) ErrorText(_notifError!),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: 180,
-                    child: OutlinedButton.icon(
-                      onPressed: _openTimePickerHandler,
-                      icon: const Icon(Icons.watch_later_outlined),
-                      label: Text(_notificationTime.format(context)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    runSpacing: 16,
-                    alignment: WrapAlignment.end,
+      body: Container(
+        height: double.infinity,
+        // color: Colors.lightBlue.shade100,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          child: Container(
+            height: height,
+            // color: Colors.lightGreen.shade200,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (_initializingNotifications)
+                  const Center(
+                    child: CircularProgressIndicator.adaptive(),
+                  )
+                else
+                  Column(
+                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // mainAxisSize: MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      for (final day in _notificationDays.entries)
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(kWeekDays[day.key]!.substring(0, 3)),
-                            Transform.rotate(
-                              angle: -0.5,
-                              child: SizedBox(
-                                width: 50,
-                                child: Switch(
-                                  onChanged: _initializingNotifications
-                                      ? null
-                                      : (v) {
-                                          setState(() {
-                                            _notificationDays[day.key] = v;
-                                          });
-                                          _updateNotifications();
-                                        },
-                                  value: day.value,
+                      Text(
+                        'Notifications',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      ListTile(
+                        title: const Text('Notifications Permissions:'),
+                        leading: const Icon(Icons.notifications_outlined),
+                        enableFeedback: false,
+                        trailing: Checkbox(
+                          tristate: true,
+                          value: (_hasNotifPermissions),
+                          onChanged: _hasNotifPermissions == true
+                              ? null
+                              : (value) {
+                                  if (_hasNotifPermissions != true) {
+                                    _requestNotifPermissions();
+                                  }
+                                },
+                          fillColor: MaterialStateProperty.resolveWith<Color>(
+                            (states) {
+                              if (_hasNotifPermissions == null) {
+                                return Colors.blue;
+                              } else if (!_hasNotifPermissions!) {
+                                return Colors.orange.shade800;
+                              }
+
+                              return Colors.green;
+                            },
+                          ),
+                        ),
+                      ),
+                      if (_notifError != null) ErrorText(_notifError!),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: 180,
+                        child: OutlinedButton.icon(
+                          onPressed: _openTimePickerHandler,
+                          icon: const Icon(Icons.watch_later_outlined),
+                          label: Text(_notificationTime.format(context)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        runSpacing: 16,
+                        alignment: WrapAlignment.end,
+                        children: [
+                          for (final day in _notificationDays.entries)
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(kWeekDays[day.key]!.substring(0, 3)),
+                                Transform.rotate(
+                                  angle: -0.5,
+                                  child: SizedBox(
+                                    width: 50,
+                                    child: Switch(
+                                      onChanged: _initializingNotifications
+                                          ? null
+                                          : (v) {
+                                              setState(() {
+                                                _notificationDays[day.key] = v;
+                                              });
+                                              _updateNotifications();
+                                            },
+                                      value: day.value,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        )
+                              ],
+                            )
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
                     ],
                   ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                Text(
+                  'v: 1.0.1',
+                  style: Theme.of(context).textTheme.caption,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -263,7 +285,7 @@ class _SettingsPageState extends State<SettingsPage> {
         days: days,
         notificationTime: _notificationTime,
         title: 'Qr Keeper Remainder',
-        body: 'Go fetch some pasza (daily)',
+        body: 'Go fetch some food (daily)',
       );
     } on AppException catch (ex) {
       SnackbarCustom.hideCurrent(context);
