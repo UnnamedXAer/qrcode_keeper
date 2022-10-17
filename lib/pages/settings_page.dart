@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:qrcode_keeper/exceptions/app_exception.dart';
 import 'package:qrcode_keeper/helpers/date.dart';
 import 'package:qrcode_keeper/helpers/snackbar.dart';
+import 'package:qrcode_keeper/models/versions_info.dart';
 import 'package:qrcode_keeper/services/local_notifications_service.dart';
+import 'package:qrcode_keeper/services/native_code_service.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -17,7 +19,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool? _hasNotifPermissions;
   bool _initializingNotifications = false;
   String? _notifError;
-  bool isAndroid13OrAbove = false;
+  VersionsInfo? _versions;
+
   final _notificationDays = Map<int, bool>.fromIterable(
     List.generate(DateTime.daysPerWeek, (index) => index + 1),
     value: (_) => false,
@@ -31,6 +34,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _initServices().then((_) {
       return _setCurrentNotificationsState();
     });
+    _readVersions();
   }
 
   Future<void> _initServices() async {
@@ -134,7 +138,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height - kBottomNavigationBarHeight - kTextTabBarHeight - 4*16 ;
+    final height = MediaQuery.of(context).size.height -
+        2 * kBottomNavigationBarHeight -
+        3 * 16;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -233,11 +239,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
                     ],
                   ),
                 Text(
-                  'v: 1.0.1+test',
+                  'version: ${_versions?.appVersion ?? '-'}',
                   style: Theme.of(context).textTheme.caption,
                 ),
               ],
@@ -299,5 +304,10 @@ class _SettingsPageState extends State<SettingsPage> {
         title: SnackbarCustom.errorTitle,
       );
     }
+  }
+
+  void _readVersions() async {
+    _versions = await NativeCodeService.getVersionsInfo();
+    setState(() {});
   }
 }
