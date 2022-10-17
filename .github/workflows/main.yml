@@ -6,6 +6,11 @@ on:
       - "staging"
       - "production"
 
+  workflow_dispatch:
+      branches:
+      - "staging"
+      - "production"
+
 jobs:
   set_variable:
     name: Workaround for passing env vars as inputs
