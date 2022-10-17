@@ -237,7 +237,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                 Text(
-                  'v: 1.0.1',
+                  'v: 1.0.1+test',
                   style: Theme.of(context).textTheme.caption,
                 ),
               ],
