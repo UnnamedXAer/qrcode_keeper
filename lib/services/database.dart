@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
@@ -176,7 +177,8 @@ class DBService {
       ],
       where: where,
       whereArgs: whereArgs,
-      orderBy: '${QRCodeNS.cUsedAt} desc, ${QRCodeNS.cExpiresAt} asc, ${QRCodeNS.cCreatedAt} asc',
+      orderBy:
+          '${QRCodeNS.cUsedAt} desc, ${QRCodeNS.cExpiresAt} asc, ${QRCodeNS.cCreatedAt} asc',
     );
 
     final List<QRCode> qrCodes = data.map((e) => QRCode.fromMap(e)).toList();
@@ -285,5 +287,29 @@ class DBService {
     final path = await _dbPath();
     await deleteDatabase(path);
     log('your db at path "$path" deleted');
+  }
+
+  Future<String> exportCodesToJSON() async {
+    final data = await _db.query(QRCodeNS.table, orderBy: QRCodeNS.cCreatedAt);
+    final s1 = jsonEncode(data);
+    return s1;
+  }
+
+  Future<int> importCodesFromJson(String data) async {
+    final rawMap = jsonDecode(data);
+    final List<Map<String, dynamic>> map = rawMap.cast<Map<String, dynamic>>();
+    final codes = map.map((e) => QRCode.fromMap(e));
+
+    final batch = _db.batch();
+    for (var code in codes) {
+      batch.insert(QRCodeNS.table, code.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.abort);
+    }
+
+    final results = await batch.commit();
+
+    debugPrint('imported/deleted codes: ${results.length}');
+
+    return results.length;
   }
 }

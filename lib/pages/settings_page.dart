@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qrcode_keeper/exceptions/app_exception.dart';
 import 'package:qrcode_keeper/helpers/date.dart';
 import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/models/versions_info.dart';
+import 'package:qrcode_keeper/pages/exp_imp_codes_page.dart';
 import 'package:qrcode_keeper/services/local_notifications_service.dart';
 import 'package:qrcode_keeper/services/native_code_service.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
@@ -20,6 +23,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _initializingNotifications = false;
   String? _notifError;
   VersionsInfo? _versions;
+  int _exportPresses = 0;
+  Timer? _exportPresserTimeout;
 
   final _notificationDays = Map<int, bool>.fromIterable(
     List.generate(DateTime.daysPerWeek, (index) => index + 1),
@@ -37,113 +42,22 @@ class _SettingsPageState extends State<SettingsPage> {
     _readVersions();
   }
 
-  Future<void> _initServices() async {
-    final notifServiceInitialized = await _initNotifService();
-    if (notifServiceInitialized) {
-      return _requestNotifPermissions();
-    }
-  }
-
-  Future<bool> _initNotifService() async {
-    setState(() {
-      _initializingNotifications = true;
-    });
-    try {
-      await LocalNotificationsService.initialize();
-      setState(() {
-        _initializingNotifications = false;
-      });
-
-      return true;
-    } catch (err) {
-      debugPrint('Initialize notifications: err: $err');
-      setState(() {
-        _initializingNotifications = false;
-      });
-      SnackbarCustom.show(
-        context,
-        mounted: mounted,
-        title: SnackbarCustom.errorTitle,
-        message: 'Could not initialize notifications settings.',
-        level: MessageLevel.error,
-      );
-      return false;
-    }
-  }
-
-  Future<void> _requestNotifPermissions() async {
-    try {
-      final ns = LocalNotificationsService();
-      final hasPermissions = await ns.requestPermissions();
-
-      setState(() {
-        if (hasPermissions == false) {
-          _notifError =
-              'You must grant notifications permissions otherwise no notification will show up (see Android Settings / Applications).';
-        } else if (hasPermissions == null) {
-          throw AppException(
-            'Verifying notifications permissions failed.',
-            'requestPermissions has returned null',
-          );
-        } else {
-          _notifError = null;
-        }
-        _hasNotifPermissions = hasPermissions;
-      });
-    } on Exception catch (ex) {
-      debugPrint('_requestNotifPermissions: ex: $ex');
-      setState(() {
-        _hasNotifPermissions = null;
-        _notifError =
-            'Couldn\'t verify notifications permissions, ensure the app has them granted otherwise no notification will show up (see Android Settings / Applications)';
-      });
-      SnackbarCustom.hideCurrent(context, mounted: mounted);
-      SnackbarCustom.show(
-        context,
-        mounted: mounted,
-        title: SnackbarCustom.errorTitle,
-        message: 'Failed to get notification permissions.',
-        level: MessageLevel.error,
-      );
-    }
-  }
-
-  Future<void> _setCurrentNotificationsState() async {
-    final ns = LocalNotificationsService();
-    try {
-      final weekDaysNotifications =
-          await ns.getPendingWeekDayNotificationRequests();
-      if (weekDaysNotifications.isEmpty) {
-        return;
-      }
-
-      _notificationTime = weekDaysNotifications[0].time;
-
-      _notificationDays.forEach((key, value) {
-        _notificationDays[key] = false;
-      });
-
-      for (var notif in weekDaysNotifications) {
-        _notificationDays[notif.weekDay] = true;
-      }
-
-      setState(() {});
-    } on Exception catch (ex) {
-      debugPrint('_setCurrentNotificationsState: ex: $ex');
-      setState(() {
-        _notifError = 'Couldn\'t get notifications state.';
-      });
-    }
+  @override
+  void dispose() {
+    _exportPresserTimeout?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // TODO: remove this calculation by using correct widgets
     final height = MediaQuery.of(context).size.height -
         2 * kBottomNavigationBarHeight -
         3 * 16;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        actions: [_buildHiddenExportButton(context)],
       ),
       body: Container(
         height: double.infinity,
@@ -253,6 +167,45 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  GestureDetector _buildHiddenExportButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        _exportPresses++;
+        _exportPresserTimeout?.cancel();
+        if (_exportPresses == 4) {
+          Navigator.of(context, rootNavigator: true)
+              .push<bool?>(
+            MaterialPageRoute(
+              builder: (context) => const ExpImpCodesPage(),
+              fullscreenDialog: true,
+            ),
+          )
+              .then((value) {
+            if (value == true) {
+              SnackbarCustom.show(
+                context,
+                title: SnackbarCustom.successTitle,
+                message: 'Imported',
+                level: MessageLevel.success,
+              );
+            }
+          });
+          return;
+        }
+        _exportPresserTimeout?.cancel();
+        _exportPresserTimeout = Timer(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _exportPresses = 0;
+          }
+        });
+      },
+      child: Container(
+        width: 48,
+        color: Colors.transparent,
+      ),
+    );
+  }
+
   void _openTimePickerHandler() async {
     final nowTime = TimeOfDay.now();
     final notifTime = await showTimePicker(
@@ -303,6 +256,105 @@ class _SettingsPageState extends State<SettingsPage> {
         mounted: mounted,
         title: SnackbarCustom.errorTitle,
       );
+    }
+  }
+
+  Future<void> _initServices() async {
+    final notifServiceInitialized = await _initNotifService();
+    if (notifServiceInitialized) {
+      return _requestNotifPermissions();
+    }
+  }
+
+  Future<bool> _initNotifService() async {
+    setState(() {
+      _initializingNotifications = true;
+    });
+    try {
+      await LocalNotificationsService.initialize();
+      setState(() {
+        _initializingNotifications = false;
+      });
+
+      return true;
+    } catch (err) {
+      debugPrint('Initialize notifications: err: $err');
+      setState(() {
+        _initializingNotifications = false;
+      });
+      SnackbarCustom.show(
+        context,
+        mounted: mounted,
+        title: SnackbarCustom.errorTitle,
+        message: 'Could not initialize notifications settings.',
+        level: MessageLevel.error,
+      );
+      return false;
+    }
+  }
+
+  Future<void> _requestNotifPermissions() async {
+    try {
+      final ns = LocalNotificationsService();
+      final hasPermissions = await ns.requestPermissions();
+
+      setState(() {
+        if (hasPermissions == false) {
+          _notifError =
+              'You must grant notifications permissions otherwise no notification will show up (see Android Settings / Applications).';
+        } else if (hasPermissions == null) {
+          throw AppException(
+            'Verifying notifications permissions failed.',
+            'requestPermissions has returned null',
+          );
+        } else {
+          _notifError = null;
+        }
+        _hasNotifPermissions = hasPermissions;
+      });
+    } on Exception catch (ex) {
+      debugPrint('_requestNotifPermissions: ex: $ex');
+      setState(() {
+        _hasNotifPermissions = null;
+        _notifError =
+            'Couldn\'t verify notifications permissions, ensure the app has them granted otherwise no notification will show up (see Android Settings / Applications)';
+      });
+      SnackbarCustom.hideCurrent(context, mounted: mounted);
+      SnackbarCustom.show(
+        context,
+        mounted: mounted,
+        title: SnackbarCustom.errorTitle,
+        message: 'Failed to get notification permissions.',
+        level: MessageLevel.error,
+      );
+    }
+  }
+
+  Future<void> _setCurrentNotificationsState() async {
+    final ns = LocalNotificationsService();
+    try {
+      final weekDaysNotifications =
+          await ns.getPendingWeekDayNotificationRequests();
+      if (weekDaysNotifications.isEmpty) {
+        return;
+      }
+
+      _notificationTime = weekDaysNotifications[0].time;
+
+      _notificationDays.forEach((key, value) {
+        _notificationDays[key] = false;
+      });
+
+      for (var notif in weekDaysNotifications) {
+        _notificationDays[notif.weekDay] = true;
+      }
+
+      setState(() {});
+    } on Exception catch (ex) {
+      debugPrint('_setCurrentNotificationsState: ex: $ex');
+      setState(() {
+        _notifError = 'Couldn\'t get notifications state.';
+      });
     }
   }
 
