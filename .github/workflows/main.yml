@@ -27,5 +27,5 @@ jobs:
     with:
       flavor: ${{ needs.set_variable.outputs.flavor_out }}
       tag-suffix: -stag
-    secrets:
-      token: ${{ secrets.TOKEN }}
+    secrets: inherit
+      

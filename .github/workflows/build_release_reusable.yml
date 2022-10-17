@@ -19,7 +19,11 @@ on:
 
 
     secrets:
-      token:
+      TOKEN:
+        required: true
+      FS_KEYSTORE_FILE:
+        required: true
+      FS_KEY_PROPERTIES_FILE:
         required: true
 
 jobs:
@@ -44,16 +48,39 @@ jobs:
         with:
           flutter-version: '3.3.3'
 
+      - name: Extract secrets into required files
+        shell: bash
+        env:
+          FS_KEYSTORE_FILE: ${{ secrets.FS_KEYSTORE_FILE }}
+          FS_KEY_PROPERTIES_FILE: ${{ secrets.FS_KEY_PROPERTIES_FILE }} 
+        run: |
+          echo "Convert base64 strings to files"
+          mkdir secrets-base64
+          echo "$FS_KEY_PROPERTIES_FILE" >> secrets-base64/key.properties.base64
+          echo "$FS_KEYSTORE_FILE" >> secrets-base64/qrkeeper-keystore.jks.base64
+          echo "done with base64 files creation"
+          echo "decoding..."
+          base64 --decode secrets-base64/qrkeeper-keystore.jks.base64 > android/app/qrkeeper-keystore.jks
+          base64 --decode secrets-base64/key.properties.base64 > android/key.properties
+          echo "decoding done"
+
+      - name: verify existence of "secret" files
+        shell: bash
+        run: |
+          pwd
+          ls -l
+          echo "ls -l ./android"
+          ls -l ./android
+          echo "ls -l ./android/app"
+          ls -l ./android/app
+
       - name: Build assets & apk
         shell: pwsh
         run: ./build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
-        # shell: pwsh
-        # run: |
-        #   "${PWD}/build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release"
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/apk/${{ inputs.flavor }}/release/*"
           tag: v1.0.${{ github.run_number }}${{ inputs.tag-suffix }}
-          token: ${{ secrets.token }}
+          token: ${{ secrets.TOKEN }}
