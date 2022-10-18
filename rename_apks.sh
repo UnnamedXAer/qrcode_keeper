@@ -2,10 +2,10 @@
 
 # rename apks for pushing them to releases
 
-tag=$1
-if test -z $tag 
+run_num=$1
+if test -z $run_num 
 then
-	echo 'missing "tag" value'
+	echo 'missing "run_num" value'
 	exit 1
 fi
 
@@ -13,10 +13,10 @@ apks_path="./build/app/outputs/flutter-apk"
 
 for f in $apks_path/*.apk; do echo "-- $f"; done
 
-echo "the tag is: $tag"
+echo "the run_num is: $run_num"
 
 for f in $apks_path/*.apk; do
-	mv "$f" "${f/"app-"/"qrkeeper-$tag-"}"
+	mv "$f" "${f/"app-"/"qrkeeper-$run_num-"}"
 done
 
 for f in $apks_path/*.apk; do echo "-- $f"; done

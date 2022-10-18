@@ -76,7 +76,7 @@ jobs:
 
       - name: Build assets & apk
         shell: pwsh
-        run: ./build.ps1 -flavor ${{ inputs.flavor }} -instal=false -buildAssets -buildType release
+        run: ./build.ps1 -flavor ${{ inputs.flavor }} -install=false -buildAssets -buildType release
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
