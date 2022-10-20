@@ -1,36 +1,62 @@
 name: Build & Release
 
-on: 
+on:
   push: # after successfully merged pull request the push is executed.
-    branches:
-      - "staging"
-      - "production"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-staging"
+      - "v[0-9]+.[0-9]+.[0-9]+-development"
+    # branches:
+    #   - "staging"
+    #   - "production"
 
-  workflow_dispatch:
-      branches:
-      - "staging"
-      - "production"
+  # workflow_dispatch:
+  #     branches:
+  #     - "staging"
+  #     - "production"
 
 jobs:
   set_variable:
+    if: endsWith(github.event.base_ref, 'main')
     name: Workaround for passing env vars as inputs
     runs-on: ubuntu-latest
     outputs:
-      flavor_out: ${{ steps.set_variables_step.outputs.flavor_out }}
+      flavor_out: ${{ steps.set_flavor.outputs.flavor_out }}
     steps:
-      - name: Print inputs passed to the call-build-workflow
-        id: set_variables_step
+      - name: set output flavor variable
+        id: set_flavor
+        shell: pwsh
         run: |
-          echo "flavor: $GITHUB_REF_NAME"
-          echo "::set-output name=flavor_out::$GITHUB_REF_NAME"
+          function getFlavor {
+            param (
+              $tag
+            )
+            if ($null -eq $tag -or $tag -eq "") {
+              throw 'missing "tag" value'
+              exit 1
+            }
+            
+            if ( $tag -match '^v\d*.\d*.\d*-(staging|development){1}$' ) {
+              return $tag.Split("-")[1]
+            } elseif ( $tag -match '^v\d*.\d*.\d*$') {
+              return "production"
+            } else {
+              throw "invalid tag: $tag"
+              exit 1
+            }
+          }
+
+          $flavor=getFlavor("${{ github.ref_name }}") 
+          $out_here = "${{ github.env }}".replace("set_env_" , "set_output_")
+          echo "out there is $out_here"
+          echo "flavor_out=$flavor" >> $out_here
 
   call-build-workflow:
-    needs: 
+    needs:
       - set_variable
     name: "Calling Build & Release reusable workflow"
     uses: ./.github/workflows/build_release_reusable.yml
     with:
       flavor: ${{ needs.set_variable.outputs.flavor_out }}
-      tag-suffix: -stag
+      tag_name: ${{ github.ref_name }}
     secrets: inherit
-      

@@ -9,14 +9,12 @@ on:
       flavor:
         required: true
         type: string
-        description: "One of: 'production' or 'staging'"
+        description: "One of: 'production' / 'staging' / 'development'"
 
-      tag-suffix:
+      tag_name:
         required: false
         type: string
-        default: ""
-        description: "string appended to the tag. Empty for production otherwise starts with dash, eg. -stag"
-
+        description: "the tag"
 
     secrets:
       TOKEN:
@@ -28,31 +26,33 @@ on:
 
 jobs:
   build:
-    if: inputs.flavor == 'production' || inputs.flavor == 'staging'
+    if: inputs.flavor == 'production' || inputs.flavor == 'staging' || inputs.flavor == 'development'
     name: "Build & Release: ${{ inputs.flavor }}"
     runs-on: ubuntu-latest
     steps:
       - name: Git Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
 
-      - name: Branch name
-        run: echo "running on branch ${{ inputs.flavor }}"
+      - name: Flavor ${{ inputs.flavor }}
+        run: echo "Flavor is ${{ inputs.flavor }}."
 
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
-          java-version: '17.x'
+          java-version: "17.x"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v1
         with:
-          flutter-version: '3.3.3'
+          flutter-version: "3.3.3"
 
       - name: Extract secrets into required files
         shell: bash
         env:
           FS_KEYSTORE_FILE: ${{ secrets.FS_KEYSTORE_FILE }}
-          FS_KEY_PROPERTIES_FILE: ${{ secrets.FS_KEY_PROPERTIES_FILE }} 
+          FS_KEY_PROPERTIES_FILE: ${{ secrets.FS_KEY_PROPERTIES_FILE }}
         run: |
           echo "Convert base64 strings to files"
           mkdir secrets-base64
@@ -64,23 +64,43 @@ jobs:
           base64 --decode secrets-base64/key.properties.base64 > android/key.properties
           echo "decoding done"
 
-      - name: verify existence of "secret" files
+      - name: Verify existence of "secrets" files
         shell: bash
         run: |
-          pwd
-          ls -l
           echo "ls -l ./android"
           ls -l ./android
           echo "ls -l ./android/app"
           ls -l ./android/app
 
+      - name: Updating version in  ./pubspec.yaml
+        id: update_app_version
+        run: |
+          node .github/node_scripts/prepare_version.js "${{ inputs.tag_name }}"
+
       - name: Build assets & apk
         shell: pwsh
         run: ./build.ps1 -flavor ${{ inputs.flavor }} -install=false -buildAssets -buildType release
+
+      - name: Rename apks
+        run: |
+          ./rename_apks.sh ${{ github.run_number }}
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/apk/${{ inputs.flavor }}/release/*"
-          tag: v1.0.${{ github.run_number }}${{ inputs.tag-suffix }}
+          tag: ${{ inputs.tag_name }}
           token: ${{ secrets.TOKEN }}
+
+      - name: Committing ./pubspec.yaml
+        if: steps.update_app_version.outcome == 'success' && inputs.flavor == 'production'
+        run: |
+          git config --global user.name 'UnnamedXAer'
+          git config --global user.email 'unnamedxaer@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+
+          git add ./pubspec.yaml
+          git status
+          git commit -m "workflow: bump app version name & version code"
+          git push origin  HEAD:main
+          echo "auto committed version bump done"
