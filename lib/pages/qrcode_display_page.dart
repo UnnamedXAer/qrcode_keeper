@@ -10,6 +10,8 @@ import 'package:qrcode_keeper/models/code_unmarked.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
+import 'package:qrcode_keeper/widgets/qrcode_done_button.dart';
+import 'package:qrcode_keeper/widgets/qrcode_preview.dart';
 
 class QRCodeDisplayPage extends StatefulWidget {
   const QRCodeDisplayPage(
@@ -101,9 +103,11 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                 ErrorText(_error!)
               else if (_loading)
                 const Center(child: CircularProgressIndicator())
-              else if (code != null)
-                ..._buildQrCodeContent(code)
-              else
+              else if (code != null) ...[
+                ..._buildQrCodeContent(code),
+                Text(
+                    'Got ${_codes.length} code${_codes.length > 1 ? 's' : ''} currently at position ${_selectedCodeIdx + 1}.'),
+              ] else
                 ..._buildNoCodesContent()
             ],
           ),
@@ -178,53 +182,21 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
 
     return [
-      Container(
-        alignment: Alignment.center,
-        margin: const EdgeInsets.only(
-          top: 8,
-          bottom: 5,
-        ),
-        width: qrSize,
-        height: qrSize,
-        child: _buildQrCode(
-          data: code.value,
-          size: qrSize,
-          onTap: _qrcodeTapped,
-        ),
-      ),
-      Container(
-        padding: const EdgeInsets.all(8),
-        margin: const EdgeInsets.only(bottom: 8),
-        color: Colors.blueGrey.shade200,
-        child: Text(
-          code.value,
-          textAlign: TextAlign.center,
-          textScaleFactor: 1.3,
-        ),
+      QRCodePreview(
+        size: qrSize,
+        value: code.value,
       ),
       Text(
         'This is a not used code for the selected month.\nWhen scanned use the Done button to mark it as used. The app will then close.',
         textScaleFactor: 0.9,
-        style: TextStyle(color: (code.usedAt != null ? Colors.grey : null)),
+        style: TextStyle(
+          color: (code.usedAt != null ? Colors.grey : null),
+        ),
       ),
-      Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 16,
-          horizontal: 32,
-        ),
-        child: ElevatedButton.icon(
-          icon: const Icon(Icons.done),
-          label: Text(code.usedAt != null ? 'Already Used' : 'Done'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.lightGreen.shade700,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            textStyle: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          onPressed: code.usedAt != null ? null : () => _markAsUsed(code.id),
-        ),
+      QRCodeDoneButton(
+        id: code.id,
+        wasUsed: code.usedAt != null,
+        toggleCodeUsed: code.usedAt != null ? null : () => _markAsUsed(code.id),
       ),
       if (code.expiresAt != null && code.expiresAt!.isBefore(DateTime.now()))
         Text(
@@ -266,25 +238,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
           ),
         ]),
       ),
-      Text(
-          'Got ${_codes.length} code${_codes.length > 1 ? 's' : ''} currently at position ${_selectedCodeIdx + 1}.'),
     ];
-  }
-
-  Widget _buildQrCode({
-    required String data,
-    double? size,
-    void Function()? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: QrImage(
-        data: data,
-        version: QrVersions.auto,
-        size: size,
-        backgroundColor: Colors.white,
-      ),
-    );
   }
 
   void _checkForNotMarkedCode() async {
@@ -396,6 +350,12 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   }
 
   void _markAsUsed(int id) async {
+    final idx = _codes.indexWhere((c) => c.id == id);
+
+    if (_codes[idx].usedAt != null) {
+      return;
+    }
+
     final db = DBService();
     final now = DateTime.now();
     await db.toggleCodeUsed(id, now);
@@ -404,7 +364,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
       exit(0);
     }
     _debugAnyCodeUsed = true;
-    final idx = _codes.indexWhere((c) => c.id == id);
 
     if (idx == -1) {
       return;
@@ -485,32 +444,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
       _expirationDate = date;
     });
     _getCodes();
-  }
-
-  void _qrcodeTapped() {
-    final code = _codes[_selectedCodeIdx];
-
-    showGeneralDialog(
-      context: context,
-      barrierColor: Theme.of(context).scaffoldBackgroundColor,
-      barrierDismissible: true,
-      barrierLabel: code.value,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final size = MediaQuery.of(context).size;
-        return SafeArea(
-            child: Container(
-          width: size.width,
-          height: size.height,
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: _buildQrCode(
-              data: code.value,
-              onTap: () => Navigator.pop(context),
-            ),
-          ),
-        ));
-      },
-    );
   }
 
   void _onScreenChangeHandler() {

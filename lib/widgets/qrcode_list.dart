@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:month_year_picker/month_year_picker.dart';
+import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/models/code.dart';
+import 'package:qrcode_keeper/pages/qrcode_details_page.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
@@ -96,39 +98,56 @@ class _QRCodeListState extends State<QRCodeList> {
       content =
           Text('No Codes found for month: ${_expirationDate.monthDesc()}');
     } else {
-      content = Expanded(
-        child: ListView.separated(
+      final captionStyle = Theme.of(context).textTheme.caption;
+
+      content = Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: Expanded(
+          child: ListView.builder(
             shrinkWrap: true, // TODO remove shrinkWrap & expanded
             itemCount: _codes.length,
             itemBuilder: (context, i) {
-              return ListTile(
-                title: Text(_codes[i].value),
-                subtitle: Text(
-                    '${_codes[i].expiresAt?.format()}${_codes[i].usedAt != null ? ' / ${_codes[i].usedAt!.format()}' : ''}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: ExpansionTile(
+                  childrenPadding: const EdgeInsets.only(
+                    left: 8,
+                    right: 8,
+                    bottom: 8,
+                  ),
+                  collapsedBackgroundColor:
+                      Colors.blueGrey.shade50.withOpacity(.6),
+                  title: Text(_codes[i].value),
+                  subtitle: _codes[i].usedAt == null
+                      ? null
+                      : Text(
+                          _codes[i].usedAt!.format(),
+                          style: captionStyle,
+                        ),
+                  trailing: _buildItemActions(i),
+                  backgroundColor: Colors.blueGrey.shade50,
+                  expandedAlignment: Alignment.topLeft,
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (_codes[i].usedAt != null)
-                      IconButton(
-                        onPressed: () => _showDialogUnmarkUsed(_codes[i].id),
-                        icon: const Icon(Icons.done),
+                      Text(
+                        'Used at: ${_codes[i].usedAt!.format(withSeconds: true)}',
                       ),
-                    IconButton(
-                      onPressed: _codes[i].usedAt != null
-                          ? null
-                          : () => _showDialogDelete(_codes[i].id),
-                      icon: const Icon(Icons.delete_outlined),
+                    if (_codes[i].usedAt != null)
+                      const SizedBox(
+                        height: 8,
+                      ),
+                    Text(
+                      'Added at: ${_codes[i].createdAt.format()}',
                     ),
                   ],
                 ),
-                onTap: () {
-                  widget.onItemPressed(_codes[i]);
-                },
               );
             },
-            separatorBuilder: ((context, index) => const Divider(
-                  height: 4,
-                ))),
+            // separatorBuilder: (context, index) => const Divider(height: 4),
+          ),
+        ),
       );
     }
 
@@ -169,6 +188,45 @@ class _QRCodeListState extends State<QRCodeList> {
     );
   }
 
+  Widget _buildItemActions(int i) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_codes[i].usedAt != null) const Icon(Icons.done),
+        IconButton(
+          onPressed: () => _openCodeDetails(_codes[i].id),
+          icon: const Icon(Icons.remove_red_eye_outlined),
+        ),
+        _buildItemMenu(i),
+      ],
+    );
+  }
+
+  Widget _buildItemMenu(int i) {
+    return PopupMenuButton(
+      itemBuilder: (context) {
+        return [
+          if (_codes[i].usedAt != null)
+            PopupMenuItem(
+              child: TextButton.icon(
+                onPressed: () => _showDialogUnmarkUsed(_codes[i].id),
+                icon: const Icon(Icons.done),
+                label: const Text('Un-Done'),
+              ),
+            ),
+          PopupMenuItem(
+            child: TextButton.icon(
+              onPressed: () =>
+                  _showDialogDelete(_codes[i].id, _codes[i].usedAt),
+              icon: const Icon(Icons.delete_outlined),
+              label: const Text('Delete'),
+            ),
+          ),
+        ];
+      },
+    );
+  }
+
   void _selectMonth() async {
     final selectedDate = await showMonthYearPicker(
       context: context,
@@ -182,7 +240,29 @@ class _QRCodeListState extends State<QRCodeList> {
     }
   }
 
-  void _showDialogDelete(int id) {
+  void _openCodeDetails(int codeId) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (context) {
+          return QrCodeDetailsPage(id: codeId);
+        },
+      ),
+    ).then((value) => setState(() {}));
+  }
+
+  void _showDialogDelete(int id, DateTime? usedAt) {
+    Navigator.of(context).pop();
+
+    if (usedAt != null) {
+      SnackbarCustom.hideCurrent(context);
+      SnackbarCustom.show(
+        context,
+        title: "Done codes cannot be deleted",
+        message: "Un-done it to delete.",
+      );
+      return;
+    }
+
     final idx = _codes.indexWhere((c) => c.id == id);
 
     showDialog(
@@ -223,6 +303,8 @@ class _QRCodeListState extends State<QRCodeList> {
   }
 
   void _showDialogUnmarkUsed(int id) {
+    Navigator.of(context).pop();
+
     showDialog(
       context: context,
       barrierDismissible: true,

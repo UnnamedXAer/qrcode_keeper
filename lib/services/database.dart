@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/models/code_unmarked.dart';
 import 'package:qrcode_keeper/services/db_helpers.dart';
@@ -131,6 +132,22 @@ class DBService {
 
     final results = await batch.commit();
     debugPrint('inserted codes: ${results.length}');
+  }
+
+  Future<QRCode?> getCode(int id) async {
+    final data = await _db.query(
+      QRCodeNS.table,
+      where: '${QRCodeNS.cId} = ?',
+      whereArgs: [id],
+    );
+
+    if (data.isEmpty) {
+      return null;
+    }
+
+    final code = QRCode.fromMap(data.first);
+
+    return code;
   }
 
   /// returns list of `QRCode` that will expire in the given month

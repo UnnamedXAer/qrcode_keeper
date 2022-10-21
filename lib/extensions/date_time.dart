@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 extension DateParsing on DateTime {
   String format({
     bool withTime = true,
-    withSeconds = false,
+    bool withSeconds = false,
   }) {
     if (withTime) {
       if (withSeconds) {
