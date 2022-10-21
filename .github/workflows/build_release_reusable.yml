@@ -118,5 +118,5 @@ jobs:
           git add ./pubspec.yaml
           git status
           git commit -m "workflow: bump app version name & version code"
-          git push origin  HEAD:main
+          git push origin  HEAD:master
           echo "auto committed version bump done"
