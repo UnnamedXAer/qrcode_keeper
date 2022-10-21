@@ -81,13 +81,13 @@ jobs:
         run: ./build.ps1 -flavor ${{ inputs.flavor }} -install=false -buildAssets -buildType release
 
       - name: Rename apks
-        run: ./rename_apks.sh ${{ github.run_number }}
+        run: ./.github/scripts/rename_apks.sh ${{ github.run_number }}
 
       - name: Generate checksums
         id: generate_checksums
         run: |
           echo "GENERATE CHECKSUMS INTO checksum.txt:"
-          echo $(./generate_checksums.sh) >> checksum.txt
+          echo $(./.github/scripts/generate_checksums.sh) >> checksum.txt
           
           echo "VERIFY CHECKSUM FILE:"
           ls -l che*
