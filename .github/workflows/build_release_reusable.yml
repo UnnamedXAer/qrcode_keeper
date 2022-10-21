@@ -74,22 +74,37 @@ jobs:
 
       - name: Updating version in  ./pubspec.yaml
         id: update_app_version
-        run: |
-          node .github/node_scripts/prepare_version.js "${{ inputs.tag_name }}"
+        run: node .github/node_scripts/prepare_version.js "${{ inputs.tag_name }}"
 
       - name: Build assets & apk
         shell: pwsh
         run: ./build.ps1 -flavor ${{ inputs.flavor }} -install=false -buildAssets -buildType release
 
       - name: Rename apks
+        run: ./rename_apks.sh ${{ github.run_number }}
+
+      - name: Generate checksums
+        id: generate_checksums
         run: |
-          ./rename_apks.sh ${{ github.run_number }}
+          echo "GENERATE CHECKSUMS INTO checksum.txt:"
+          echo $(./generate_checksums.sh) >> checksum.txt
+          
+          echo "VERIFY CHECKSUM FILE:"
+          ls -l che*
+
+          echo "SET CHECKSUMS INTO checksum FROM GENERATED FILE:"
+          echo "checksum=\"$(<./checksum.txt)\"" >> $GITHUB_OUTPUT
+
+      - name: See checksum
+        run: |
+          echo "checksum from output:"
+          echo "${{ steps.generate_checksums.outputs.checksum }}"
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/apk/${{ inputs.flavor }}/release/*"
-          tag: ${{ inputs.tag_name }}
+          artifacts: "build/app/outputs/flutter-apk/qrkeeper-*.apk,./checksum.txt"
+          name: ${{ inputs.tag_name }}
           token: ${{ secrets.TOKEN }}
 
       - name: Committing ./pubspec.yaml
