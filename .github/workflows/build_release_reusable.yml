@@ -106,6 +106,7 @@ jobs:
           artifacts: "build/app/outputs/flutter-apk/qrkeeper-*.apk,./checksum.txt"
           name: ${{ inputs.tag_name }}
           token: ${{ secrets.TOKEN }}
+          generateReleaseNotes: true
 
       - name: Committing ./pubspec.yaml
         if: steps.update_app_version.outcome == 'success' && inputs.flavor == 'production'
