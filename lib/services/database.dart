@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/models/code_unmarked.dart';
 import 'package:qrcode_keeper/services/db_helpers.dart';
@@ -11,7 +10,7 @@ import 'package:sqflite/sqflite.dart';
 class DBService {
   static final DBService _instance = DBService._internal();
   late final Database _db;
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   DBService._internal();
 
@@ -71,6 +70,15 @@ class DBService {
       batch.execute(createSql);
     }
 
+    void addFavoriteColumnToQrCodeV3(Batch batch) {
+      const addFavColumnSql = 'ALTER TABLE ${QRCodeNS.table} ADD COLUMN ${QRCodeNS.cFavorite} INTEGER NOT NULL default 0';
+
+      debugPrint(
+          'adding ${QRCodeNS.cFavorite} column to the ${QRCodeNS.table} table... \n$addFavColumnSql');
+
+      batch.execute(addFavColumnSql);
+    }
+
     _instance._db = await openDatabase(
       await _dbPath(),
       version: _dbVersion,
@@ -79,6 +87,7 @@ class DBService {
         final batch = db.batch();
         createTableQrCodeV1(batch);
         createTableQrCodeUnmarkedV2(batch);
+        addFavoriteColumnToQrCodeV3(batch);
         await batch.commit();
       },
       onOpen: (db) async {
@@ -90,6 +99,9 @@ class DBService {
         final batch = db.batch();
         if (oldVer == 1) {
           createTableQrCodeUnmarkedV2(batch);
+          addFavoriteColumnToQrCodeV3(batch);
+        } else if (oldVer == 2) {
+          addFavoriteColumnToQrCodeV3(batch);
         }
 
         await batch.commit();
@@ -225,6 +237,23 @@ class DBService {
     if (result == 0) {
       throw Exception(
           'failed to toggle as used for code with id: $id, date: $date');
+    }
+  }
+
+  Future<void> toggleFavorite(int id) async {
+    try {
+      final result = await _db.rawUpdate(
+        '''UPDATE ${QRCodeNS.table} SET 
+      ${QRCodeNS.cFavorite} = CASE (
+          SELECT ${QRCodeNS.cFavorite} 
+          FROM ${QRCodeNS.table} 
+          WHERE ${QRCodeNS.cId} = ?) 
+          WHEN 1 THEN 0 ELSE 1 END
+        WHERE ${QRCodeNS.cId} = ?''',
+        [id, id],
+      );
+    } catch (err) {
+      debugPrint('toggleFavorite: err: $err');
     }
   }
 

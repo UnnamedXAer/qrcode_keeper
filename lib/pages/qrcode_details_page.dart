@@ -56,7 +56,7 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
                   value: _code!.value,
                 ),
                 QRCodeFavorite(
-                  favorite: _code!.usedAt != null,
+                  favorite: _code!.favorite,
                   onTap: _toggleFavorite,
                 ),
                 QRCodeDoneButton(
@@ -73,7 +73,14 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
   }
 
   void _toggleFavorite() {
-    //
+    if (_code == null) {
+      return;
+    }
+    final db = DBService();
+    db.toggleFavorite(_code!.id);
+    setState(() {
+      _code = _code!.copyWith(favorite: !_code!.favorite);
+    });
   }
 
   void _getCode(int codeId, {bool toggleLoading = true}) async {

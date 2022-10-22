@@ -7,6 +7,7 @@ class QRCode {
   final DateTime? usedAt;
   final DateTime? expiresAt;
   final bool validForMonth;
+  final bool favorite;
 
   QRCode({
     this.id = 0,
@@ -15,17 +16,18 @@ class QRCode {
     this.usedAt,
     this.expiresAt,
     this.validForMonth = false,
+    this.favorite = false,
   });
 
   /// works only for setting new values, does not work for setting `null`'s
-  QRCode copyWith({
-    final int? id,
-    final String? value,
-    final DateTime? createdAt,
-    final DateTime? usedAt,
-    final DateTime? expiresAt,
-    final bool? validForMonth,
-  }) =>
+  QRCode copyWith(
+          {final int? id,
+          final String? value,
+          final DateTime? createdAt,
+          final DateTime? usedAt,
+          final DateTime? expiresAt,
+          final bool? validForMonth,
+          final bool? favorite}) =>
       QRCode(
         id: id ?? this.id,
         value: value ?? this.value,
@@ -33,6 +35,7 @@ class QRCode {
         expiresAt: expiresAt ?? this.expiresAt,
         usedAt: usedAt ?? this.usedAt,
         validForMonth: validForMonth ?? this.validForMonth,
+        favorite: favorite ?? this.favorite,
       );
 
   Map<String, Object?> toMap() {
@@ -42,6 +45,7 @@ class QRCode {
       QRCodeNS.cUsedAt: usedAt?.millisecondsSinceEpoch as num?,
       QRCodeNS.cExpiresAt: expiresAt?.millisecondsSinceEpoch as num?,
       QRCodeNS.cValidForMonth: (validForMonth ? 1 : 0) as num?,
+      QRCodeNS.cFavorite: (favorite ? 1 : 0) as num?,
     };
 
     if (id != 0) {
@@ -64,5 +68,6 @@ class QRCode {
             ? null
             : DateTime.fromMillisecondsSinceEpoch(
                 data[QRCodeNS.cExpiresAt] as int),
-        validForMonth = data[QRCodeNS.cValidForMonth] == 1 ? true : false;
+        validForMonth = data[QRCodeNS.cValidForMonth] == 1 ? true : false,
+        favorite = data[QRCodeNS.cFavorite] == 1 ? true : false;
 }

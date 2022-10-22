@@ -12,6 +12,7 @@ class QRCodeNS {
   static const cUsedAt = 'usedAt';
   static const cExpiresAt = 'expiresAt';
   static const cValidForMonth = 'validForMonth';
+  static const cFavorite = 'favorite';
 }
 
 /// `QRCodeUnmarkedNS` represents db table
