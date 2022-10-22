@@ -1,15 +1,17 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 class QRCodeFavorite extends StatefulWidget {
   const QRCodeFavorite({
     required this.favorite,
     this.onTap,
+    this.size = 28.0,
+    this.starsCnt = 3,
     super.key,
   });
   final bool favorite;
   final VoidCallback? onTap;
+  final int starsCnt;
+  final double size;
 
   @override
   State<QRCodeFavorite> createState() => _QRCodeFavoriteState();
@@ -50,34 +52,31 @@ class _QRCodeFavoriteState extends State<QRCodeFavorite>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.favorite ? Colors.amber.shade400 : null;
+    final color = widget.favorite
+        ? Colors.amber.shade400
+        : const Color.fromRGBO(136, 136, 136, 1);
     return GestureDetector(
       onTap: widget.onTap == null ? null : _onTap,
-      child: Transform.scale(
-        scale: _scaleAnimation.value,
+      child: Center(
         child: Container(
+          width: widget.starsCnt * widget.size + 2 * 16,
           padding: const EdgeInsets.symmetric(
-            horizontal: 32,
+            horizontal: 16,
             vertical: 8,
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.star_border_outlined,
-                color: color,
-                size: 28,
-              ),
-              Icon(
-                Icons.star_border_outlined,
-                color: color,
-                size: 28,
-              ),
-              Icon(
-                Icons.star_border_outlined,
-                color: color,
-                size: 28,
-              ),
-            ],
+          child: Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (int i = 0; i < widget.starsCnt; i++)
+                  Icon(
+                    Icons.star_border_outlined,
+                    color: color,
+                    size: widget.size,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -93,4 +92,3 @@ class _QRCodeFavoriteState extends State<QRCodeFavorite>
     widget.onTap!();
   }
 }
-
