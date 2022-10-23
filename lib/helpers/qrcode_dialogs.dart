@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qrcode_keeper/models/code.dart';
 
 Future<T?> showDialogToggleCodeUsed<T>(
   BuildContext context,
@@ -78,6 +79,84 @@ Future<T?> showDialogToggleCodeUsed<T>(
               ),
             ],
           ),
+        ),
+      );
+    },
+  );
+}
+
+Future<T?> showDialogDeleteCode<T>(
+  BuildContext context,
+  QRCode code,
+  Future<void> Function(int id) onAccept,
+) {
+  bool isOpen = true;
+  bool isAwaiting = false;
+
+  return showDialog(
+    context: context,
+    barrierDismissible: true,
+    useRootNavigator: true,
+    builder: (context) {
+      return WillPopScope(
+        onWillPop: () {
+          if (isAwaiting) {
+            return Future.value(false);
+          }
+          isOpen = false;
+          return Future.value(true);
+        },
+        child: StatefulBuilder(
+          builder: ((context, setState) {
+            return AlertDialog(
+              content: Text(
+                'Delete Code: ${code.value}?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isAwaiting
+                      ? null
+                      : () {
+                          if (isAwaiting) {
+                            return;
+                          }
+                          isOpen = false;
+                          Navigator.of(context).pop();
+                        },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: isAwaiting
+                      ? null
+                      : () {
+                          if (isAwaiting) {
+                            return;
+                          }
+
+                          setState(() {
+                            isAwaiting = true;
+                          });
+
+                          onAccept(code.id).whenComplete(
+                            () {
+                              if (!isOpen) {
+                                return;
+                              }
+
+                              final canPop =
+                                  Navigator.maybeOf(context)?.canPop() ?? false;
+
+                              if (canPop) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                          );
+                        },
+                  child: const Text('Yes'),
+                ),
+              ],
+            );
+          }),
         ),
       );
     },

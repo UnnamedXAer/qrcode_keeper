@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:month_year_picker/month_year_picker.dart';
+import 'package:qrcode_keeper/helpers/qrcode_dialogs.dart';
 import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/pages/qrcode_details_page.dart';
@@ -265,32 +266,7 @@ class _QRCodeListState extends State<QRCodeList> {
 
     final idx = _codes.indexWhere((c) => c.id == id);
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      useRootNavigator: true,
-      builder: (context) {
-        return AlertDialog(
-          content: Text(
-            'Delete Code: ${_codes[idx].value}?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                _deleteCode(id).then((value) => Navigator.of(context).pop());
-              },
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
+    showDialogDeleteCode(context, _codes[idx], _deleteCode);
   }
 
   Future<void> _deleteCode(int id) async {

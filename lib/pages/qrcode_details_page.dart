@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 import 'package:qrcode_keeper/helpers/qrcode_dialogs.dart';
+import 'package:qrcode_keeper/helpers/snackbar.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
@@ -53,28 +54,44 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
               else if (_loading)
                 const Center(child: CircularProgressIndicator()),
               if (_code != null) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    QRCodeFavorite(
+                      favorite: _code!.favorite,
+                      onTap: _toggleFavorite,
+                    ),
+                    IconButton(
+                      onPressed: _showDeleteDialog,
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
                 QRCodePreview(
                   size: qrSize,
                   value: _code!.value,
                 ),
-                QRCodeFavorite(
-                  favorite: _code!.favorite,
-                  onTap: _toggleFavorite,
-                ),
                 QRCodeDoneButton(
-                    id: _code!.id,
-                    wasUsed: _code!.usedAt != null,
-                    toggleCodeUsed: () {
-                      showDialogToggleCodeUsed(
-                        context,
-                        _code!.id,
-                        _code!.usedAt != null,
-                        _toggleCodeUsed,
-                      );
-                    }),
+                  id: _code!.id,
+                  wasUsed: _code!.usedAt != null,
+                  toggleCodeUsed: () {
+                    showDialogToggleCodeUsed(
+                      context,
+                      _code!.id,
+                      _code!.usedAt != null,
+                      _toggleCodeUsed,
+                    );
+                  },
+                ),
+                if (_code!.usedAt != null)
+                  Text(
+                    'The code was used at ${_code!.usedAt!.format(withSeconds: true)}.',
+                    textAlign: TextAlign.center,
+                  ),
+                const SizedBox(height: 8),
                 if (_code!.expiresAt != null)
                   Text(
-                    'This code ${_code!.expiresAt!.isBefore(DateTime.now()) ? 'expired' : 'expires'} at ${_code!.expiresAt!.format(withTime: false)}.',
+                    'The code ${_code!.expiresAt!.isBefore(DateTime.now()) ? 'expired' : 'expires'} at ${_code!.expiresAt!.format(withTime: false)}.',
                     textAlign: TextAlign.center,
                   ),
               ],
@@ -113,6 +130,29 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
       _error = null;
       _code = code;
     });
+  }
+
+  void _showDeleteDialog() {
+    if (_code!.usedAt != null) {
+      SnackbarCustom.hideCurrent(context);
+      SnackbarCustom.show(
+        context,
+        title: "Done codes cannot be deleted",
+        message: "Un-done it to delete.",
+      );
+      return;
+    }
+
+    showDialogDeleteCode(context, _code!, _deleteCode);
+  }
+
+  Future<void> _deleteCode(int id) async {
+    final db = DBService();
+    await db.deleteQRCode(id);
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _toggleCodeUsed(int _) async {
