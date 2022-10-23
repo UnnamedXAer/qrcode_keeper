@@ -146,7 +146,6 @@ class _QRCodeListState extends State<QRCodeList> {
                 ),
               );
             },
-            // separatorBuilder: (context, index) => const Divider(height: 4),
           ),
         ),
       );
@@ -208,23 +207,35 @@ class _QRCodeListState extends State<QRCodeList> {
       itemBuilder: (context) {
         return [
           if (_codes[i].usedAt != null)
-            PopupMenuItem(
-              child: TextButton.icon(
-                onPressed: () => _showDialogUnmarkUsed(_codes[i].id),
-                icon: const Icon(Icons.done),
-                label: const Text('Un-Done'),
-              ),
+            _buildMenuItem(
+              i,
+              () => _showDialogUnmarkUsed(_codes[i].id),
+              'Un-Done',
+              Icons.done,
             ),
-          PopupMenuItem(
-            child: TextButton.icon(
-              onPressed: () =>
-                  _showDialogDelete(_codes[i].id, _codes[i].usedAt),
-              icon: const Icon(Icons.delete_outlined),
-              label: const Text('Delete'),
-            ),
+          _buildMenuItem(
+            i,
+            () => _showDialogDelete(_codes[i].id, _codes[i].usedAt),
+            'Delete',
+            Icons.delete_outlined,
           ),
         ];
       },
+    );
+  }
+
+  PopupMenuItem _buildMenuItem(
+      int codeId, VoidCallback onTap, String text, IconData iconData) {
+    return PopupMenuItem(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Icon(iconData),
+          const SizedBox(width: 16),
+          Text(text),
+        ],
+      ),
     );
   }
 
@@ -252,8 +263,6 @@ class _QRCodeListState extends State<QRCodeList> {
   }
 
   void _showDialogDelete(int id, DateTime? usedAt) {
-    Navigator.of(context).pop();
-
     if (usedAt != null) {
       SnackbarCustom.hideCurrent(context);
       SnackbarCustom.show(
@@ -279,8 +288,6 @@ class _QRCodeListState extends State<QRCodeList> {
   }
 
   void _showDialogUnmarkUsed(int id) {
-    Navigator.of(context).pop();
-
     showDialog(
       context: context,
       barrierDismissible: true,
