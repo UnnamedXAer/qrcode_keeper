@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qrcode_keeper/helpers/qrcode_dialogs.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/models/code_unmarked.dart';
 import 'package:qrcode_keeper/services/database.dart';
@@ -205,7 +205,10 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         ),
       if (code.usedAt != null)
         TextButton(
-          onPressed: () => _showDialogUnmarkUsed(code.id),
+          onPressed: () {
+            showDialogToggleCodeUsed(
+                context, code.id, code.usedAt != null, _unmarkUsed);
+          },
           child: Text(
             'This code was used at ${code.usedAt!.format()}.',
           ),
@@ -374,42 +377,16 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     });
   }
 
-  void _showDialogUnmarkUsed(int id) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      useRootNavigator: true,
-      builder: (context) {
-        return AlertDialog(
-          content: const Text(
-            'Undo "Done" for this code?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                _unmarkUsed(id).then((value) => Navigator.of(context).pop());
-              },
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _unmarkUsed(int id) async {
     final db = DBService();
     const now = null;
     await db.toggleCodeUsed(id, now);
 
-    final idx = _codes.indexWhere((c) => c.id == id);
+    if (!mounted) {
+      return;
+    }
 
+    final idx = _codes.indexWhere((c) => c.id == id);
     if (idx == -1) {
       return;
     }

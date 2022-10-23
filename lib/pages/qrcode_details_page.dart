@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:qrcode_keeper/extensions/date_time.dart';
+import 'package:qrcode_keeper/helpers/qrcode_dialogs.dart';
 import 'package:qrcode_keeper/models/code.dart';
 import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
@@ -60,10 +62,21 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
                   onTap: _toggleFavorite,
                 ),
                 QRCodeDoneButton(
-                  id: _code!.id,
-                  wasUsed: _code!.usedAt != null,
-                  toggleCodeUsed: _toggleCodeUsed,
-                ),
+                    id: _code!.id,
+                    wasUsed: _code!.usedAt != null,
+                    toggleCodeUsed: () {
+                      showDialogToggleCodeUsed(
+                        context,
+                        _code!.id,
+                        _code!.usedAt != null,
+                        _toggleCodeUsed,
+                      );
+                    }),
+                if (_code!.expiresAt != null)
+                  Text(
+                    'This code ${_code!.expiresAt!.isBefore(DateTime.now()) ? 'expired' : 'expires'} at ${_code!.expiresAt!.format(withTime: false)}.',
+                    textAlign: TextAlign.center,
+                  ),
               ],
             ],
           ),
@@ -102,10 +115,21 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
     });
   }
 
-  void _toggleCodeUsed() async {
+  Future<void> _toggleCodeUsed(int _) async {
     final db = DBService();
     final when = _code!.usedAt != null ? null : DateTime.now();
     await db.toggleCodeUsed(_code!.id, when);
-    _getCode(_code!.id, toggleLoading: false);
+    if (mounted) {
+      setState(() {
+        _code = QRCode(
+          id: _code!.id,
+          value: _code!.value,
+          createdAt: _code!.createdAt,
+          expiresAt: _code!.expiresAt,
+          usedAt: when,
+          validForMonth: _code!.validForMonth,
+        );
+      });
+    }
   }
 }
