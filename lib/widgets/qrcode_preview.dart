@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qrcode_keeper/widgets/shimmer.dart';
 
 class QRCodePreview extends StatelessWidget {
   const QRCodePreview({
@@ -9,7 +10,7 @@ class QRCodePreview extends StatelessWidget {
   });
 
   final double size;
-  final String value;
+  final String? value;
 
   @override
   Widget build(BuildContext context) {
@@ -30,14 +31,17 @@ class QRCodePreview extends StatelessWidget {
             onTap: () => _qrcodeTapped(context),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(8),
-          margin: const EdgeInsets.only(bottom: 8),
-          color: Colors.blueGrey.shade200,
-          child: Text(
-            value,
-            textAlign: TextAlign.center,
-            textScaleFactor: 1.3,
+        ShimmerLoading(
+          isLoading: value == null,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(bottom: 8),
+            color: Colors.blueGrey.shade200,
+            child: Text(
+              value ?? ' ',
+              textAlign: TextAlign.center,
+              textScaleFactor: 1.3,
+            ),
           ),
         ),
       ],
@@ -69,18 +73,27 @@ class QRCodePreview extends StatelessWidget {
   }
 
   Widget _buildQrCode({
-    required String data,
+    required String? data,
     double? size,
     void Function()? onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: QrImage(
-        data: data,
-        version: QrVersions.auto,
-        size: size,
-        backgroundColor: Colors.white,
-      ),
+    return ShimmerLoading(
+      isLoading: data == null,
+      child: data == null
+          ? Container(
+              color: Colors.white,
+              width: size,
+              height: size,
+            )
+          : GestureDetector(
+              onTap: onTap,
+              child: QrImage(
+                data: data,
+                version: QrVersions.auto,
+                size: size,
+                backgroundColor: Colors.white,
+              ),
+            ),
     );
   }
 }

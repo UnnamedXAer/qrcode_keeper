@@ -8,6 +8,7 @@ import 'package:qrcode_keeper/widgets/error_text.dart';
 import 'package:qrcode_keeper/widgets/qrcode_favorite.dart';
 import 'package:qrcode_keeper/widgets/qrcode_done_button.dart';
 import 'package:qrcode_keeper/widgets/qrcode_preview.dart';
+import 'package:qrcode_keeper/widgets/shimmer.dart';
 
 class QrCodeDetailsPage extends StatefulWidget {
   const QrCodeDetailsPage({
@@ -35,67 +36,89 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
+    final isLoading = _code == null || _loading;
     return Scaffold(
       appBar: AppBar(title: const Text('Details')),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            top: 8,
-            left: 16,
-            right: 16,
-            bottom: 16,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_error != null)
-                ErrorText(_error!)
-              else if (_loading)
-                const Center(child: CircularProgressIndicator()),
-              if (_code != null) ...[
+      body: Shimmer(
+        linearGradient: ShimmerLoading.shimmerGradient,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: 8,
+              left: 16,
+              right: 16,
+              bottom: 16,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_error != null) ErrorText(_error!),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    QRCodeFavorite(
-                      favorite: _code!.favorite,
-                      onTap: _toggleFavorite,
+                    ShimmerLoading(
+                      isLoading: isLoading,
+                      child: QRCodeFavorite(
+                        favorite: _code?.favorite ?? false,
+                        onTap: isLoading ? null : _toggleFavorite,
+                      ),
                     ),
-                    IconButton(
-                      onPressed: _showDeleteDialog,
-                      icon: const Icon(Icons.delete_outline),
+                    ShimmerLoading(
+                      isLoading: isLoading,
+                      child: IconButton(
+                        onPressed: _showDeleteDialog,
+                        icon: const Icon(Icons.delete_outline),
+                      ),
                     ),
                   ],
                 ),
                 QRCodePreview(
                   size: qrSize,
-                  value: _code!.value,
+                  value: _code?.value,
                 ),
                 QRCodeDoneButton(
-                  id: _code!.id,
-                  wasUsed: _code!.usedAt != null,
-                  toggleCodeUsed: () {
-                    showDialogToggleCodeUsed(
-                      context,
-                      _code!.id,
-                      _code!.usedAt != null,
-                      _toggleCodeUsed,
-                    );
-                  },
+                  wasUsed: _code?.usedAt != null,
+                  toggleCodeUsed: isLoading
+                      ? null
+                      : () {
+                          showDialogToggleCodeUsed(
+                            context,
+                            _code!.id,
+                            _code!.usedAt != null,
+                            _toggleCodeUsed,
+                          );
+                        },
                 ),
-                if (_code!.usedAt != null)
-                  Text(
-                    'The code was used at ${_code!.usedAt!.format(withSeconds: true)}.',
-                    textAlign: TextAlign.center,
-                  ),
+                ShimmerLoading(
+                  isLoading: isLoading,
+                  child: _code?.usedAt == null
+                      ? Container(
+                          color: Colors.white,
+                          width: 100,
+                          height: 20,
+                        )
+                      : Text(
+                          'The code was used at ${_code!.usedAt!.format(withSeconds: true)}.',
+                          textAlign: TextAlign.center,
+                        ),
+                ),
                 const SizedBox(height: 8),
-                if (_code!.expiresAt != null)
-                  Text(
-                    'The code ${_code!.expiresAt!.isBefore(DateTime.now()) ? 'expired' : 'expires'} at ${_code!.expiresAt!.format(withTime: false)}.',
-                    textAlign: TextAlign.center,
-                  ),
+                ShimmerLoading(
+                  isLoading: isLoading,
+                  child: _code?.expiresAt == null
+                      ? Container(
+                          color: Colors.white,
+                          width: 100,
+                          height: 20,
+                        )
+                      : Text(
+                          'The code ${(_code!.expiresAt!.isBefore(DateTime.now())) ? 'expired' : 'expires'} at ${_code!.expiresAt!.format(withTime: false)}.',
+                          textAlign: TextAlign.center,
+                        ),
+                ),
               ],
-            ],
+            ),
           ),
         ),
       ),

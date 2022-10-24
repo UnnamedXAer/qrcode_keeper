@@ -194,7 +194,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         ),
       ),
       QRCodeDoneButton(
-        id: code.id,
         wasUsed: code.usedAt != null,
         toggleCodeUsed: code.usedAt != null ? null : () => _markAsUsed(code.id),
       ),
