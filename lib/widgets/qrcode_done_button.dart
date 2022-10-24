@@ -21,6 +21,7 @@ class QRCodeDoneButton extends StatelessWidget {
         horizontal: 32,
       ),
       child: ShimmerLoading(
+        debugLabel: 'Button Done Shimmer',
         isLoading: showShimmering,
         child: ElevatedButton.icon(
           icon: const Icon(Icons.done),

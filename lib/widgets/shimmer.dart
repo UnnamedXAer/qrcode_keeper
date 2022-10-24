@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 class Shimmer extends StatefulWidget {
@@ -85,11 +87,14 @@ class ShimmerLoading extends StatefulWidget {
   const ShimmerLoading({
     required this.isLoading,
     required this.child,
+    this.debugLabel,
     super.key,
   });
 
   final Widget child;
   final bool isLoading;
+
+  final String? debugLabel;
 
   @override
   State<ShimmerLoading> createState() => _ShimmerLoadingState();
@@ -130,10 +135,16 @@ class _ShimmerLoadingState extends State<ShimmerLoading> {
       return const SizedBox();
     }
 
+    final renderObj = context.findRenderObject() as RenderBox?;
+    if (renderObj == null) {
+      log('${widget.debugLabel} renderObj: $renderObj, context: ${context}');
+      return const SizedBox();
+    }
+
     final shimmerSize = shimmer.size;
     final gradient = shimmer.gradient;
     final offsetWithinShimmer = shimmer.getDescendantOffset(
-      descendant: context.findRenderObject() as RenderBox,
+      descendant: renderObj,
     );
 
     return ShaderMask(

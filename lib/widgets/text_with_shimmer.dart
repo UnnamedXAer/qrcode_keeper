@@ -20,6 +20,7 @@ class TextWithShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShimmerLoading(
+      debugLabel: 'Text with Shimmer',
       isLoading: isLoading,
       child: Container(
         color: bgColor,

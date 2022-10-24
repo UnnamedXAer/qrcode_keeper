@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -86,6 +87,8 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
 
+    log('Is button: ${_loading || (_error == null && _codes.isNotEmpty)}');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("QR Code"),
@@ -125,7 +128,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                 ),
               ),
             ),
-            if (_error == null)
+            if (_loading || (_error == null && _codes.isNotEmpty))
               Positioned(
                 bottom: 0,
                 left: 16,
@@ -133,8 +136,9 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                 child: QRCodeDoneButton(
                   showShimmering: code == null,
                   wasUsed: code?.usedAt != null,
-                  toggleCodeUsed:
-                      code?.usedAt != null ? null : () => _markAsUsed(code!.id),
+                  toggleCodeUsed: code == null || code.usedAt != null
+                      ? null
+                      : () => _markAsUsed(code.id),
                 ),
               ),
           ],
@@ -248,6 +252,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         child:
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           ShimmerLoading(
+            debugLabel: 'Button Previous Shimmer',
             isLoading: _loading,
             child: OutlinedButton(
               child: const Text('Previous'),
@@ -262,6 +267,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
             ),
           ),
           ShimmerLoading(
+            debugLabel: 'Button Next Shimmer',
             isLoading: _loading,
             child: OutlinedButton(
               child: const Text('Next'),

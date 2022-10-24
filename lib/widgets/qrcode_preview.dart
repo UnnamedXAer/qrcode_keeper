@@ -32,6 +32,7 @@ class QRCodePreview extends StatelessWidget {
           ),
         ),
         ShimmerLoading(
+          debugLabel: 'QR Preview Shimmer',
           isLoading: value == null,
           child: Container(
             padding: const EdgeInsets.all(8),
@@ -57,17 +58,18 @@ class QRCodePreview extends StatelessWidget {
       pageBuilder: (context, animation, secondaryAnimation) {
         final size = MediaQuery.of(context).size;
         return SafeArea(
-            child: Container(
-          width: size.width,
-          height: size.height,
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: _buildQrCode(
-              data: value,
-              onTap: () => Navigator.pop(context),
+          child: Container(
+            width: size.width,
+            height: size.height,
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: _buildQrCode(
+                data: value,
+                onTap: () => Navigator.pop(context),
+              ),
             ),
           ),
-        ));
+        );
       },
     );
   }
@@ -78,6 +80,7 @@ class QRCodePreview extends StatelessWidget {
     void Function()? onTap,
   }) {
     return ShimmerLoading(
+      debugLabel: 'QR Preview Value Shimmer',
       isLoading: data == null,
       child: data == null
           ? Container(
