@@ -9,6 +9,7 @@ import 'package:qrcode_keeper/widgets/qrcode_favorite.dart';
 import 'package:qrcode_keeper/widgets/qrcode_done_button.dart';
 import 'package:qrcode_keeper/widgets/qrcode_preview.dart';
 import 'package:qrcode_keeper/widgets/shimmer.dart';
+import 'package:qrcode_keeper/widgets/text_with_shimmer.dart';
 
 class QrCodeDetailsPage extends StatefulWidget {
   const QrCodeDetailsPage({
@@ -37,6 +38,7 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
   Widget build(BuildContext context) {
     final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
     final isLoading = _code == null || _loading;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
     return Scaffold(
       appBar: AppBar(title: const Text('Details')),
       body: Shimmer(
@@ -90,33 +92,21 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
                           );
                         },
                 ),
-                ShimmerLoading(
-                  isLoading: isLoading,
-                  child: _code?.usedAt == null
-                      ? Container(
-                          color: Colors.white,
-                          width: 100,
-                          height: 20,
-                        )
-                      : Text(
-                          'The code was used at ${_code!.usedAt!.format(withSeconds: true)}.',
-                          textAlign: TextAlign.center,
-                        ),
-                ),
+                if (isLoading || _code?.usedAt != null)
+                  TextWithShimmer(
+                    isLoading: isLoading,
+                    bgColor: bgColor,
+                    text:
+                        'The code was used at ${_code?.usedAt?.format(withSeconds: true)}.',
+                  ),
                 const SizedBox(height: 8),
-                ShimmerLoading(
-                  isLoading: isLoading,
-                  child: _code?.expiresAt == null
-                      ? Container(
-                          color: Colors.white,
-                          width: 100,
-                          height: 20,
-                        )
-                      : Text(
-                          'The code ${(_code!.expiresAt!.isBefore(DateTime.now())) ? 'expired' : 'expires'} at ${_code!.expiresAt!.format(withTime: false)}.',
-                          textAlign: TextAlign.center,
-                        ),
-                ),
+                if (isLoading || _code?.expiresAt != null)
+                  TextWithShimmer(
+                    isLoading: isLoading,
+                    bgColor: bgColor,
+                    text:
+                        'The code ${(_code?.expiresAt?.isBefore(DateTime.now())) ?? false ? 'expired' : 'expires'} at ${_code?.expiresAt?.format(withTime: false)}.',
+                  ),
               ],
             ),
           ),
