@@ -12,6 +12,8 @@ import 'package:qrcode_keeper/extensions/date_time.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
 import 'package:qrcode_keeper/widgets/qrcode_done_button.dart';
 import 'package:qrcode_keeper/widgets/qrcode_preview.dart';
+import 'package:qrcode_keeper/widgets/shimmer.dart';
+import 'package:qrcode_keeper/widgets/text_with_shimmer.dart';
 
 class QRCodeDisplayPage extends StatefulWidget {
   const QRCodeDisplayPage(
@@ -82,35 +84,60 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     final QRCode? code =
         _selectedCodeIdx == -1 ? null : _codes[_selectedCodeIdx];
 
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("QR Code"),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            top: 8,
-            left: 16,
-            right: 16,
-            bottom: 16,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ..._buildMonthPicker(),
-              if (_error != null)
-                ErrorText(_error!)
-              else if (_loading)
-                const Center(child: CircularProgressIndicator())
-              else if (code != null) ...[
-                ..._buildQrCodeContent(code),
-                Text(
-                    'Got ${_codes.length} code${_codes.length > 1 ? 's' : ''} currently at position ${_selectedCodeIdx + 1}.'),
-              ] else
-                ..._buildNoCodesContent()
-            ],
-          ),
+      body: Shimmer(
+        linearGradient: ShimmerLoading.shimmerGradient,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ..._buildMonthPicker(),
+                    if (_error != null)
+                      ErrorText(_error!)
+                    else if (!_loading && _codes.isEmpty)
+                      ..._buildNoCodesContent()
+                    else ...[
+                      ..._buildQrCodeContent(code),
+                      TextWithShimmer(
+                        isLoading: _loading,
+                        bgColor: bgColor,
+                        text:
+                            'Got ${_codes.length} code${_codes.length > 1 ? 's' : ''} currently at position ${_selectedCodeIdx + 1}.',
+                      ),
+                      const SizedBox(height: 120),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (_error == null)
+              Positioned(
+                bottom: 0,
+                left: 16,
+                right: 16,
+                child: QRCodeDoneButton(
+                  showShimmering: code == null,
+                  wasUsed: code?.usedAt != null,
+                  toggleCodeUsed:
+                      code?.usedAt != null ? null : () => _markAsUsed(code!.id),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -158,12 +185,10 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
             children: const [
               Icon(Icons.qr_code, size: 30),
               Positioned(
-                  right: -6,
-                  top: -6,
-                  child: Icon(
-                    Icons.add,
-                    size: 14,
-                  )),
+                right: -6,
+                top: -6,
+                child: Icon(Icons.add, size: 14),
+              ),
             ],
           ),
           label: const Text('Add Some Codes'),
@@ -178,65 +203,77 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     ];
   }
 
-  List<Widget> _buildQrCodeContent(QRCode code) {
-    final qrSize = MediaQuery.of(context).size.shortestSide.clamp(100.0, 300.0);
+  List<Widget> _buildQrCodeContent(
+    QRCode? code,
+  ) {
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final size = MediaQuery.of(context).size;
+    final qrSize = size.shortestSide.clamp(
+      100.0,
+      (size.longestSide / 2.5).clamp(100.0, 300.0),
+    );
 
     return [
       QRCodePreview(
         size: qrSize,
-        value: code.value,
+        value: code?.value,
       ),
-      Text(
-        'This is a not used code for the selected month.\nWhen scanned use the Done button to mark it as used. The app will then close.',
-        textScaleFactor: 0.9,
+      TextWithShimmer(
+        isLoading: code == null,
+        bgColor: bgColor,
+        text:
+            'This is a not used code for the selected month.\nWhen scanned use the Done button to mark it as used.\nAfter that the app will close.',
+        textScaleFactor: 0.85,
         style: TextStyle(
-          color: (code.usedAt != null ? Colors.grey : null),
+          color: (code?.usedAt != null ? Colors.grey : null),
         ),
       ),
-      QRCodeDoneButton(
-        wasUsed: code.usedAt != null,
-        toggleCodeUsed: code.usedAt != null ? null : () => _markAsUsed(code.id),
-      ),
-      if (code.expiresAt != null && code.expiresAt!.isBefore(DateTime.now()))
+      if (code?.expiresAt != null && code!.expiresAt!.isBefore(DateTime.now()))
         Text(
           'This code expired at ${code.expiresAt!.format(withTime: false)}.',
           textAlign: TextAlign.center,
         ),
-      if (code.usedAt != null)
+      if (code?.usedAt != null)
         TextButton(
           onPressed: () {
             showDialogToggleCodeUsed(
-                context, code.id, code.usedAt != null, _unmarkUsed);
+                context, code!.id, code.usedAt != null, _unmarkUsed);
           },
           child: Text(
-            'This code was used at ${code.usedAt!.format()}.',
+            'This code was used at ${code!.usedAt!.format()}.',
           ),
         ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
         child:
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          OutlinedButton(
-            child: const Text('Previous'),
-            onPressed: () {
-              setState(() {
-                _selectedCodeIdx -= 1;
-                if (_selectedCodeIdx < 0) {
-                  _selectedCodeIdx = _codes.length - 1;
-                }
-              });
-            },
+          ShimmerLoading(
+            isLoading: _loading,
+            child: OutlinedButton(
+              child: const Text('Previous'),
+              onPressed: () {
+                setState(() {
+                  _selectedCodeIdx -= 1;
+                  if (_selectedCodeIdx < 0) {
+                    _selectedCodeIdx = _codes.length - 1;
+                  }
+                });
+              },
+            ),
           ),
-          OutlinedButton(
-            child: const Text('Next'),
-            onPressed: () {
-              setState(() {
-                _selectedCodeIdx += 1;
-                if (_selectedCodeIdx >= _codes.length) {
-                  _selectedCodeIdx = 0;
-                }
-              });
-            },
+          ShimmerLoading(
+            isLoading: _loading,
+            child: OutlinedButton(
+              child: const Text('Next'),
+              onPressed: () {
+                setState(() {
+                  _selectedCodeIdx += 1;
+                  if (_selectedCodeIdx >= _codes.length) {
+                    _selectedCodeIdx = 0;
+                  }
+                });
+              },
+            ),
           ),
         ]),
       ),
@@ -295,9 +332,8 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-                },
+                onPressed:
+                    ScaffoldMessenger.of(context).hideCurrentMaterialBanner,
                 style:
                     TextButton.styleFrom(visualDensity: VisualDensity.compact),
                 child: const Text(

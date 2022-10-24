@@ -80,6 +80,7 @@ class _QrCodeDetailsPageState extends State<QrCodeDetailsPage> {
                   value: _code?.value,
                 ),
                 QRCodeDoneButton(
+                  showShimmering: isLoading,
                   wasUsed: _code?.usedAt != null,
                   toggleCodeUsed: isLoading
                       ? null

@@ -5,10 +5,12 @@ class QRCodeDoneButton extends StatelessWidget {
   const QRCodeDoneButton({
     required this.wasUsed,
     required this.toggleCodeUsed,
+    required this.showShimmering,
     super.key,
   });
 
   final bool wasUsed;
+  final bool showShimmering;
   final VoidCallback? toggleCodeUsed;
 
   @override
@@ -19,11 +21,12 @@ class QRCodeDoneButton extends StatelessWidget {
         horizontal: 32,
       ),
       child: ShimmerLoading(
-        isLoading: toggleCodeUsed == null,
+        isLoading: showShimmering,
         child: ElevatedButton.icon(
           icon: const Icon(Icons.done),
           label: Text(wasUsed ? 'Already Used' : 'Done'),
           style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: Colors.grey.shade300,
             backgroundColor:
                 wasUsed ? Colors.deepOrange : Colors.lightGreen.shade700,
             padding: const EdgeInsets.symmetric(vertical: 20),
