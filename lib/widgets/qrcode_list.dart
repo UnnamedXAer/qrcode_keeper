@@ -259,7 +259,7 @@ class _QRCodeListState extends State<QRCodeList> {
           return QrCodeDetailsPage(id: codeId);
         },
       ),
-    ).then((value) => setState(() {}));
+    ).then((value) => _getCodes());
   }
 
   void _showDialogDelete(int id, DateTime? usedAt) {
