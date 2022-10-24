@@ -24,8 +24,9 @@ class ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
     _shimmerController = AnimationController.unbounded(vsync: this)
-      ..repeat(min: -.5, max: 1.5, period: const Duration(milliseconds: 1000));
+      ..repeat(min: -0.5, max: 1.5, period: const Duration(milliseconds: 1000));
   }
 
   @override
@@ -36,7 +37,7 @@ class ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   Listenable get shimmerChanges => _shimmerController;
 
-  Gradient get gradient => LinearGradient(
+  LinearGradient get gradient => LinearGradient(
         colors: widget.linearGradient.colors,
         begin: widget.linearGradient.begin,
         end: widget.linearGradient.end,
@@ -141,7 +142,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading> {
         return gradient.createShader(
           Rect.fromLTWH(
             -offsetWithinShimmer.dx,
-            offsetWithinShimmer.dy,
+            -offsetWithinShimmer.dy,
             shimmerSize.width,
             shimmerSize.height,
           ),
