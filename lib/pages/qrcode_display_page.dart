@@ -356,8 +356,14 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
                 ),
               ),
               TextButton(
-                onPressed:
-                    ScaffoldMessenger.of(context).hideCurrentMaterialBanner,
+                onPressed: () {
+                  _markAsUsed(
+                    possibleUnmarkedQRCode.codeId,
+                    possibleUnmarkedQRCode.createdAt,
+                    false,
+                  );
+                  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+                },
                 style:
                     TextButton.styleFrom(visualDensity: VisualDensity.compact),
                 child: const Text(
@@ -410,7 +416,11 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     }
   }
 
-  void _markAsUsed(int id) async {
+  void _markAsUsed(
+    int id, [
+    DateTime? maybeUsedAt,
+    bool closeAfter = true,
+  ]) async {
     final idx = _codes.indexWhere((c) => c.id == id);
 
     if (_codes[idx].usedAt != null) {
@@ -418,10 +428,10 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     }
 
     final db = DBService();
-    final now = DateTime.now();
-    await db.toggleCodeUsed(id, now);
+    final usedAt = maybeUsedAt ?? DateTime.now();
+    await db.toggleCodeUsed(id, usedAt);
 
-    if (kReleaseMode) {
+    if (kReleaseMode && closeAfter) {
       exit(0);
     }
     _debugAnyCodeUsed = true;
@@ -431,7 +441,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     }
 
     setState(() {
-      _codes[idx] = _codes[idx].copyWith(usedAt: now);
+      _codes[idx] = _codes[idx].copyWith(usedAt: usedAt);
     });
   }
 
