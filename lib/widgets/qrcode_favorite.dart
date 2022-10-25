@@ -29,7 +29,9 @@ class _QRCodeFavoriteState extends State<QRCodeFavorite>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
-      value: widget.favorite ? 1 : 0,
+      lowerBound: 0.0,
+      upperBound: 1.0,
+      value: widget.favorite ? 1.0 : 0.0,
     );
 
     final curve = CurvedAnimation(
@@ -50,6 +52,13 @@ class _QRCodeFavoriteState extends State<QRCodeFavorite>
       begin: const Color.fromRGBO(136, 136, 136, 1),
       end: Colors.amber.shade400,
     ).animate(curve);
+  }
+
+  @override
+  void didUpdateWidget(covariant QRCodeFavorite oldWidget) {
+    _controller.stop();
+    _controller.value = widget.favorite ? 1.0 : 0.0;
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
