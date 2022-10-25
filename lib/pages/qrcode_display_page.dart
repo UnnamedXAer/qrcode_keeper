@@ -172,8 +172,10 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
 
   List<Widget> _buildNoCodesContent() {
     return [
-      const Text('There are tough times in life... no codes found.',
-          textScaleFactor: 1.4),
+      const Text(
+        'There are tough times in life... You will suffer... No codes found.',
+        textScaleFactor: 1.4,
+      ),
       const SizedBox(height: 16),
       const Text(
           'Scan some or report a bug if you believe there should be some unused codes for current month.'),
@@ -372,6 +374,8 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
 
   void _getCodes() {
     setState(() {
+      _selectedCodeIdx = -1;
+      _codes.clear();
       _loading = true;
       _error = null;
     });
@@ -499,10 +503,10 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
   }
 
   void _onScreenChangeHandler() {
-    debugPrint('screen changed');
+    debugPrint('screen changed to: ${widget._persistentTabController.index}');
 
     if (widget._persistentTabController.index == 0) {
-      if (!_loading && _codes.isEmpty) {
+      if (!_loading) {
         _getCodes();
       }
     } else {
