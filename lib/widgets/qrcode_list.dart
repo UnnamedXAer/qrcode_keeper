@@ -208,7 +208,21 @@ class _QRCodeListState extends State<QRCodeList> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (code.usedAt != null) const Icon(Icons.done),
+        if (code.favorite)
+          Icon(
+            Icons.money_outlined,
+            color: Colors.amber.shade400,
+          )
+        else
+          const SizedBox(
+            width: 24,
+          ),
+        if (code.usedAt != null)
+          const Icon(Icons.done)
+        else
+          const SizedBox(
+            width: 24,
+          ),
         IconButton(
           onPressed: () => _openCodeDetails(code.id),
           icon: const Icon(Icons.remove_red_eye_outlined),
@@ -228,6 +242,11 @@ class _QRCodeListState extends State<QRCodeList> {
               'Un-Done',
               Icons.done,
             ),
+          _buildMenuItem(
+            () => _toggleFavorite(code.id),
+            'Favorite',
+            Icons.money_outlined,
+          ),
           _buildMenuItem(
             () => _showDialogDelete(code.id, code.usedAt),
             'Delete',
@@ -304,6 +323,29 @@ class _QRCodeListState extends State<QRCodeList> {
     });
   }
 
+  void _toggleFavorite(int id) async {
+    final db = DBService();
+    await db.toggleFavorite(id);
+
+    final idx = _codes.indexWhere((c) => c.id == id);
+
+    if (idx == -1) {
+      return;
+    }
+
+    setState(() {
+      _codes[idx] = QRCode(
+        id: _codes[idx].id,
+        value: _codes[idx].value,
+        createdAt: _codes[idx].createdAt,
+        expiresAt: _codes[idx].expiresAt,
+        usedAt: _codes[idx].usedAt,
+        validForMonth: _codes[idx].validForMonth,
+        favorite: !_codes[idx].favorite,
+      );
+    });
+  }
+
   void _showDialogUnmarkUsed(int id) {
     showDialog(
       context: context,
@@ -338,22 +380,6 @@ class _QRCodeListState extends State<QRCodeList> {
     const now = null;
     await db.toggleCodeUsed(id, now);
 
-    final idx = _codes.indexWhere((c) => c.id == id);
-
-    if (idx == -1) {
-      return;
-    }
-
-    setState(() {
-      _codes[idx] = QRCode(
-        id: _codes[idx].id,
-        value: _codes[idx].value,
-        createdAt: _codes[idx].createdAt,
-        expiresAt: _codes[idx].expiresAt,
-        usedAt: now,
-        validForMonth: _codes[idx].validForMonth,
-        favorite: _codes[idx].validForMonth,
-      );
-    });
+    _getCodes(_expirationDate);
   }
 }
