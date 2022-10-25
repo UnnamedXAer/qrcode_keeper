@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +11,7 @@ import 'package:qrcode_keeper/services/database.dart';
 import 'package:qrcode_keeper/extensions/date_time.dart';
 import 'package:qrcode_keeper/widgets/error_text.dart';
 import 'package:qrcode_keeper/widgets/qrcode_done_button.dart';
+import 'package:qrcode_keeper/widgets/qrcode_favorite.dart';
 import 'package:qrcode_keeper/widgets/qrcode_preview.dart';
 import 'package:qrcode_keeper/widgets/shimmer.dart';
 import 'package:qrcode_keeper/widgets/text_with_shimmer.dart';
@@ -86,8 +86,6 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         _selectedCodeIdx == -1 ? null : _codes[_selectedCodeIdx];
 
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
-
-    log('Is button: ${_loading || (_error == null && _codes.isNotEmpty)}');
 
     return Scaffold(
       appBar: AppBar(
@@ -218,9 +216,27 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     );
 
     return [
-      QRCodePreview(
-        size: qrSize,
-        value: code?.value,
+      Stack(
+        clipBehavior: Clip.none,
+        children: [
+          QRCodePreview(
+            size: qrSize,
+            value: code?.value,
+          ),
+          Positioned(
+            right: -16,
+            top: -20,
+            child: ShimmerLoading(
+              isLoading: _loading,
+              child: QRCodeFavorite(
+                onTap: code == null
+                    ? null
+                    : () => _toggleFavorite(_selectedCodeIdx),
+                favorite: code?.favorite ?? false,
+              ),
+            ),
+          ),
+        ],
       ),
       TextWithShimmer(
         isLoading: code == null,
@@ -440,8 +456,26 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
         expiresAt: _codes[idx].expiresAt,
         usedAt: now,
         validForMonth: _codes[idx].validForMonth,
+        favorite: _codes[idx].favorite,
       );
     });
+  }
+
+  void _toggleFavorite(int idx) {
+    final db = DBService();
+    setState(() {
+      _codes[idx] = QRCode(
+        id: _codes[idx].id,
+        value: _codes[idx].value,
+        createdAt: _codes[idx].createdAt,
+        expiresAt: _codes[idx].expiresAt,
+        usedAt: _codes[idx].usedAt,
+        validForMonth: _codes[idx].validForMonth,
+        favorite: !_codes[idx].favorite,
+      );
+    });
+
+    db.toggleFavorite(_codes[idx].id);
   }
 
   void _selectMonth() async {

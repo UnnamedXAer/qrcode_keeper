@@ -71,7 +71,8 @@ class DBService {
     }
 
     void addFavoriteColumnToQrCodeV3(Batch batch) {
-      const addFavColumnSql = 'ALTER TABLE ${QRCodeNS.table} ADD COLUMN ${QRCodeNS.cFavorite} INTEGER NOT NULL default 0';
+      const addFavColumnSql =
+          'ALTER TABLE ${QRCodeNS.table} ADD COLUMN ${QRCodeNS.cFavorite} INTEGER NOT NULL default 0';
 
       debugPrint(
           'adding ${QRCodeNS.cFavorite} column to the ${QRCodeNS.table} table... \n$addFavColumnSql');
@@ -134,6 +135,7 @@ class DBService {
         expiresAt: expireAt,
         usedAt: usedCodes[codes[i]] ?? false ? now : null,
         validForMonth: validForMonth,
+        favorite: false,
       ).toMap(),
     );
 
@@ -203,6 +205,7 @@ class DBService {
         QRCodeNS.cExpiresAt,
         QRCodeNS.cUsedAt,
         QRCodeNS.cValidForMonth,
+        QRCodeNS.cFavorite,
       ],
       where: where,
       whereArgs: whereArgs,
