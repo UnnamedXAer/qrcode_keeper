@@ -372,7 +372,7 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     );
   }
 
-  void _getCodes() {
+  void _getCodes() async {
     setState(() {
       _selectedCodeIdx = -1;
       _codes.clear();
@@ -384,33 +384,30 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     final currentGetIdx = _getCodesCnt;
 
     final db = DBService();
-    db
-        .getQRCodesForMonth(
-      _expirationDate,
-    )
-        .then(
-      (value) {
-        if (currentGetIdx != _getCodesCnt) {
-          debugPrint('skipped, $currentGetIdx, $_getCodesCnt');
-          return;
-        }
-        setState(() {
-          _selectedCodeIdx = value.isEmpty ? -1 : 0;
-          _codes = value;
-          _error = null;
-          _loading = false;
-        });
-      },
-    ).catchError((err) {
-      if (currentGetIdx != _getCodesCnt) {
-        debugPrint('skipped, $currentGetIdx, $_getCodesCnt');
+    try {
+      final monthCodes = await db.getQRCodesForMonth(
+        _expirationDate,
+      );
+      if (currentGetIdx != _getCodesCnt || !mounted) {
+        debugPrint('skipped, $mounted, $currentGetIdx, $_getCodesCnt');
+        return;
+      }
+      setState(() {
+        _selectedCodeIdx = monthCodes.isEmpty ? -1 : 0;
+        _codes = monthCodes;
+        _error = null;
+        _loading = false;
+      });
+    } catch (err) {
+      if (currentGetIdx != _getCodesCnt || !mounted) {
+        debugPrint('skipped, $mounted, $currentGetIdx, $_getCodesCnt');
         return;
       }
       setState(() {
         _error = 'Error: $err';
         _loading = false;
       });
-    });
+    }
   }
 
   void _markAsUsed(int id) async {
