@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 
 class Shimmer extends StatefulWidget {
@@ -137,7 +135,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading> {
 
     final renderObj = context.findRenderObject() as RenderBox?;
     if (renderObj == null) {
-      // TODO: render object is null when ShimmerLoading is put inside ~Shimmer/Stack/Scrolview/Column/[here]
+      // TODO: render object is null when ShimmerLoading is put inside ~Shimmer/Stack/ScrollView/Column/[here]
       // log('${widget.debugLabel} renderObj: $renderObj, context: ${context}');
       return const SizedBox();
     }

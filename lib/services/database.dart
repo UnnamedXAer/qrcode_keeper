@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:qrcode_keeper/models/code.dart';
@@ -329,14 +328,14 @@ class DBService {
     }
   }
 
-  static Future<void> _unsafe_deleteDatabase() async {
-    if (!kDebugMode) {
-      return;
-    }
-    final path = await _dbPath();
-    await deleteDatabase(path);
-    log('your db at path "$path" deleted');
-  }
+  // static Future<void> _unsafe_deleteDatabase() async {
+  //   if (!kDebugMode) {
+  //     return;
+  //   }
+  //   final path = await _dbPath();
+  //   await deleteDatabase(path);
+  //   log('your db at path "$path" deleted');
+  // }
 
   Future<String> exportCodesToJSON() async {
     final data = await _db.query(QRCodeNS.table, orderBy: QRCodeNS.cCreatedAt);
