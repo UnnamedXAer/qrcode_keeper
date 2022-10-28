@@ -30,7 +30,8 @@ class _SettingsPageState extends State<SettingsPage> {
     List.generate(DateTime.daysPerWeek, (index) => index + 1),
     value: (_) => false,
   );
-  TimeOfDay _notificationTime = const TimeOfDay(hour: 10, minute: 15);
+  TimeOfDay _notificationTime =
+      kReleaseMode ? const TimeOfDay(hour: 10, minute: 15) : TimeOfDay.now();
 
   @override
   void initState() {
@@ -59,14 +60,12 @@ class _SettingsPageState extends State<SettingsPage> {
         title: const Text('Settings'),
         actions: [_buildHiddenExportButton(context)],
       ),
-      body: Container(
+      body: SizedBox(
         height: double.infinity,
-        // color: Colors.lightBlue.shade100,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          child: Container(
+          child: SizedBox(
             height: height,
-            // color: Colors.lightGreen.shade200,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -76,8 +75,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   )
                 else
                   Column(
-                    // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    // mainAxisSize: MainAxisSize.min,
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       Text(
@@ -211,7 +208,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final notifTime = await showTimePicker(
       context: context,
       initialTime:
-          kReleaseMode ? const TimeOfDay(hour: 10, minute: 0) : nowTime,
+          kReleaseMode ? const TimeOfDay(hour: 10, minute: 15) : nowTime,
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
@@ -242,8 +239,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ns.scheduleWeekDaysNotifications(
         days: days,
         notificationTime: _notificationTime,
-        title: 'Qr Keeper Remainder',
-        body: 'Go fetch some food (daily)',
+        title: 'Qr Keeper',
       );
     } on AppException catch (ex) {
       SnackbarCustom.hideCurrent(context);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:qrcode_keeper/exceptions/app_exception.dart';
+import 'package:qrcode_keeper/helpers/date.dart';
 import 'package:qrcode_keeper/models/notification_info.dart';
 // ignore: depend_on_referenced_packages
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -72,7 +73,8 @@ class LocalNotificationsService {
           // day as Id ensures we have at most 1 scheduled notification per week day
           day,
           title,
-          body,
+          body ??
+              'QRCode remainder: ${kWeekDays[day]!.substring(0, 3)}, ${formatTimeOfDay(notificationTime)}',
           payload: payload,
           scheduledDate,
           notificationDetails,
@@ -173,14 +175,14 @@ class LocalNotificationsService {
           ticker: 'QR Keeper - daily remainder: use QR code.',
           autoCancel: true,
           audioAttributesUsage: AudioAttributesUsage.notification,
+          category: AndroidNotificationCategory.reminder,
+          visibility: NotificationVisibility.private,
           color: Colors.lightGreen,
           colorized: true,
-          category: AndroidNotificationCategory.reminder,
           ledColor: Colors.green,
           ledOnMs: 250,
           ledOffMs: 1000,
           enableVibration: true,
-          visibility: NotificationVisibility.private,
           playSound: true,
           onlyAlertOnce: true,
           actions: <AndroidNotificationAction>[
