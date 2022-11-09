@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:month_year_picker/month_year_picker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:qrcode_keeper/helpers/qrcode_dialogs.dart';
@@ -432,7 +433,14 @@ class _QRCodeDisplayPageState extends State<QRCodeDisplayPage>
     await db.toggleCodeUsed(id, usedAt);
 
     if (kReleaseMode && closeAfter) {
-      exit(0);
+      try {
+        await SystemNavigator.pop();
+      } catch (err) {
+        debugPrint(
+            'close app after code usage: err: $err,\n closing with `exit(0)`');
+        exit(0);
+      }
+      return;
     }
     _debugAnyCodeUsed = true;
 
