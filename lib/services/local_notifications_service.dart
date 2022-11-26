@@ -170,8 +170,8 @@ class LocalNotificationsService {
           'QR Keeper Daily',
           channelDescription:
               'This is a daily remainder about using a QR code.',
-          importance: Importance.max,
-          priority: Priority.max,
+          importance: Importance.defaultImportance,
+          priority: Priority.high,
           ticker: 'QR Keeper - daily remainder: use QR code.',
           autoCancel: true,
           audioAttributesUsage: AudioAttributesUsage.notification,

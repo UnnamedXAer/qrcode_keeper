@@ -236,7 +236,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     final ns = LocalNotificationsService();
     try {
-      ns.scheduleWeekDaysNotifications(
+      await ns.scheduleWeekDaysNotifications(
         days: days,
         notificationTime: _notificationTime,
         title: 'Qr Keeper',
