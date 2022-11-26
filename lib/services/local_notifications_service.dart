@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:qrcode_keeper/exceptions/app_exception.dart';
 import 'package:qrcode_keeper/helpers/date.dart';
 import 'package:qrcode_keeper/models/notification_info.dart';
@@ -44,7 +44,7 @@ class LocalNotificationsService {
 
   Future<void> _configureLocalTimeZone() async {
     tz.initializeTimeZones();
-    final String timeZone = await FlutterNativeTimezone.getLocalTimezone();
+    final String timeZone = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZone));
   }
 
